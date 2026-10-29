@@ -12,7 +12,7 @@ from PySide6.QtCore import QRectF, Qt, QTimer
 from PySide6.QtGui import QPainter, QPalette, QPen
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from aureum_island.island.widgets import ActionButton
+from aureum_island.island.widgets import ActionButton, Segments
 from aureum_island.pages.focus_model import Phase, Status
 from aureum_island.services.focus import FocusService
 from aureum_island.theme.fonts import make_font
@@ -68,36 +68,6 @@ class FocusRing(QWidget):
         painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.text)
 
 
-class Segments(QWidget):
-    def __init__(self, theme: Theme, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self._theme = theme
-        self.total = 4
-        self.filled = 0
-        theme.changed.connect(self.update)
-        self._resize()
-
-    def set_value(self, filled: int, total: int) -> None:
-        if (filled, total) != (self.filled, self.total):
-            self.filled, self.total = filled, total
-            self._resize()
-            self.update()
-
-    def _resize(self) -> None:
-        w, gap = PAGES.focus_segment_width, PAGES.focus_segment_gap
-        self.setFixedSize(self.total * w + (self.total - 1) * gap, PAGES.focus_segment_height)
-
-    def paintEvent(self, event) -> None:  # noqa: N802
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(Qt.PenStyle.NoPen)
-        w, h, gap = PAGES.focus_segment_width, PAGES.focus_segment_height, PAGES.focus_segment_gap
-        for i in range(self.total):
-            fill = self._theme.accent if i < self.filled else COLORS.track
-            painter.setBrush(qcolor(fill))
-            painter.drawRoundedRect(QRectF(i * (w + gap), 0, w, h), h / 2, h / 2)
-
-
 class FocusPage(QWidget):
     def __init__(self, service: FocusService, theme: Theme, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -123,7 +93,13 @@ class FocusPage(QWidget):
         self.status.setFont(
             make_font(TYPOGRAPHY.family_body, TYPOGRAPHY.body_size_min, tabular=True)
         )
-        self.segments = Segments(theme, self)
+        self.segments = Segments(
+            theme,
+            PAGES.focus_segment_width,
+            PAGES.focus_segment_height,
+            PAGES.focus_segment_gap,
+            parent=self,
+        )
         self.primary = ActionButton("Iniciar", theme, primary=True, parent=self)
         self.skip = ActionButton("Pular", theme, parent=self)
         self.restart = ActionButton("Reiniciar", theme, parent=self)

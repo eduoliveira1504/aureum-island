@@ -29,7 +29,7 @@ Visual: preto quente + dourado Aureum. Notch sempre escuro.
 ## Páginas
 - Música: capa 72px, título 15/600, artista 13, barra de progresso com tempos, controles (anterior, play 42px em accent, próxima), volume. Letra à direita: linha atual em accent 17/600, vizinhas em text-dim.
 - Foco: anel de progresso 132px, tempo central, "FOCO · CICLO n DE 4", 4 segmentos, botões Pausar (accent), Pular, Reiniciar.
-- Água: valor grande (38px) / meta, "faltam X ml", 8 segmentos, botões +250 / +500 ml, mini gráfico por horário.
+- Água: valor grande (38px) / meta, "faltam X ml", 8 segmentos (cada um 1/8 da meta), botões "+copo ml" (accent) e "+2×copo ml" (copo padrão 250 ml), mini gráfico por horário da janela ativa (hora atual em accent).
 - Tarefas: lista com checkbox 20px, horário à direita (pill accent para a próxima), campo "Nova tarefa" + horário + botão adicionar.
 - Calendário: mês à esquerda (hoje em accent, pontos nos dias com compromisso), agenda de hoje à direita misturando tarefas e eventos, com tipo.
 

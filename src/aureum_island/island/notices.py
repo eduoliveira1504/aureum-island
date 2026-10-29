@@ -43,6 +43,9 @@ class Notice:
     kind: str = ""
     count: int = 1  # quantos avisos este representa (para juntar em "N perdidos")
     sound_pending: bool = False
+    # False: lembrete que perde o sentido se atrasar (água). Não conta em "N avisos
+    # perdidos"; ao sair da tela cheia, só o mais recente aparece.
+    stale_ok: bool = True
 
     @property
     def primary(self) -> NoticeAction | None:
@@ -300,7 +303,10 @@ class NoticeCenter(QObject):
         if suppressed:
             return
         if len(self.queue) >= 2:
-            merged = collapse_missed(list(self.queue), "Durante a tela cheia", self._open_tasks)
-            merged[0].sound_pending = True
-            self.queue = deque(merged)
+            fresh = [n for n in self.queue if n.stale_ok]
+            perishable = [n for n in self.queue if not n.stale_ok][-1:]
+            merged = collapse_missed(fresh, "Durante a tela cheia", self._open_tasks)
+            for notice in merged + perishable:
+                notice.sound_pending = True
+            self.queue = deque(merged + perishable)
         self._show_next()

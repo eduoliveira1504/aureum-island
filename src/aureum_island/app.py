@@ -15,8 +15,11 @@ from aureum_island.island.notices import Notice, NoticeAction, NoticeCenter, col
 from aureum_island.pages.focus import FocusPage
 from aureum_island.pages.focus_model import FocusConfig, FocusState, Phase
 from aureum_island.pages.tasks import TasksPage
+from aureum_island.pages.water import WaterPage, format_ml
+from aureum_island.pages.water_model import WaterConfig, parse_time
 from aureum_island.services import focus as focus_service
 from aureum_island.services import tasks as task_service
+from aureum_island.services import water as water_service
 from aureum_island.services.focus import FocusService
 from aureum_island.services.fullscreen import create_fullscreen_watcher
 from aureum_island.services.hotkey import GlobalHotkey
@@ -27,6 +30,7 @@ from aureum_island.services.storage.settings import Settings
 from aureum_island.services.storage.tasks import TaskRepo
 from aureum_island.services.system_events import SystemEvents
 from aureum_island.services.tasks import TaskService
+from aureum_island.services.water import WaterService
 from aureum_island.theme.theme import Theme
 from aureum_island.theme.tokens import NOTICE
 
@@ -67,17 +71,24 @@ class AureumIsland(QObject):
             parent=self,
         )
 
-        # Páginas reais deste bloco; as outras seguem provisórias.
+        self.water = WaterService(self.conn, config=self._water_config, parent=self)
+
+        # Páginas reais; as outras seguem provisórias.
         self.tasks_page = TasksPage(
             self.tasks, self.theme, global_offset=lambda: self.settings.reminder_offset_min
         )
         self.focus_page = FocusPage(self.focus, self.theme)
+        self.water_page = WaterPage(self.water, self.theme)
 
         self.controller = IslandController(
             self.theme,
             minimal=s.mode == "minimal",
             last_page=s.last_page,
-            page_widgets={"tasks": self.tasks_page, "focus": self.focus_page},
+            page_widgets={
+                "tasks": self.tasks_page,
+                "focus": self.focus_page,
+                "water": self.water_page,
+            },
             parent=self,
         )
         self.controller.page_changed.connect(lambda page: self.update_settings(last_page=page))
@@ -103,6 +114,7 @@ class AureumIsland(QObject):
         self.reminders = ReminderEngine(self.conn, parent=self)
         self.reminders.register(self.tasks)
         self.reminders.register(self.focus)
+        self.reminders.register(self.water)
         self.reminders.fired.connect(self._on_fired)
         self.reminders.missed.connect(self._on_missed)
 
@@ -141,6 +153,17 @@ class AureumIsland(QObject):
         except OSError:
             log.exception("não foi possível salvar as configurações")
         return self.settings
+
+    def _water_config(self) -> WaterConfig:
+        s = self.settings
+        return WaterConfig(
+            goal_ml=s.water_goal_ml,
+            cup_ml=s.water_cup_ml,
+            reminders=s.water_reminders,
+            interval_min=s.water_interval_min,
+            start=parse_time(s.water_start),
+            end=parse_time(s.water_end),
+        )
 
     # --- avisos -------------------------------------------------------------
 
@@ -191,6 +214,20 @@ class AureumIsland(QObject):
                 icon="focus",
                 kind="focus",
                 actions=[NoticeAction(action, self.focus.start, primary=True)],
+            )
+        if due.item_type == water_service.ITEM_TYPE:
+            cfg = self._water_config()
+            total = self.water.total_today()
+            if total >= cfg.goal_ml:
+                return None
+            cup = cfg.cup_ml
+            return Notice(
+                title="Hora de beber água",
+                subtitle=f"Hoje: {format_ml(total)} de {format_ml(cfg.goal_ml)} ml",
+                icon="water",
+                kind="water",
+                stale_ok=False,
+                actions=[NoticeAction(f"+{cup} ml", lambda: self.water.add(cup), primary=True)],
             )
         log.warning("aviso de tipo desconhecido: %s", due.item_type)
         return None

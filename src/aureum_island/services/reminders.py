@@ -32,6 +32,9 @@ class Due:
     item_id: int
     fire_at: datetime  # UTC
     payload: dict[str, Any] = field(default_factory=dict, compare=False, hash=False)
+    # False: se passou da hora (app fechado, PC dormindo), é descartado sem virar
+    # "aviso perdido" (ex.: água).
+    stale_ok: bool = field(default=True, compare=False, hash=False)
 
     @property
     def key(self) -> tuple[str, int, str]:
@@ -112,13 +115,13 @@ class ReminderEngine(QObject):
         if not due:
             return
         cutoff = now - MISSED_WINDOW
-        old = [d for d in due if d.fire_at < cutoff]
-        recent = [d for d in due if d.fire_at >= cutoff]
+        old = [d for d in due if d.fire_at < cutoff or (catch_up and not d.stale_ok)]
+        recent = [d for d in due if d not in old]
         # Mais antigos que 12 h: marcados sem mostrar (fired_at NULL).
         self._record(old, None)
         self._record(recent, now)
         if old:
-            log.info("avisos: %d antigos (> 12 h) descartados", len(old))
+            log.info("avisos: %d antigos ou vencidos descartados", len(old))
         if recent:
             log.info("avisos: %d %s", len(recent), "perdidos" if catch_up else "na hora")
             (self.missed if catch_up else self.fired).emit(recent)

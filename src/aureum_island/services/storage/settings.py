@@ -21,6 +21,9 @@ SCHEMA_VERSION = 2
 MODES = ("normal", "minimal")
 PAGES = ("music", "focus", "water", "tasks", "calendar")
 REMINDER_OFFSETS = (0, 5, 10, 15, 30, 60)
+WATER_INTERVALS = (30, 45, 60, 90, 120)
+WATER_CUP_OPTIONS = (150, 200, 250, 300, 350, 500)  # sugestões; aceita 50 a 1000
+WATER_CUP_RANGE = (50, 1000)
 HOTKEY_STATUSES = ("inactive", "registered", "fallback", "failed", "unsupported")
 
 # Atalho padrão até o schema 1. Em teclado ABNT2, Ctrl+Alt equivale a AltGr; ver 0003.
@@ -47,6 +50,13 @@ class Settings:
     long_break_minutes: int = 15
     long_break_every: int = 4
     focus_state: dict | None = None
+    # Água
+    water_goal_ml: int = 2000
+    water_cup_ml: int = 250
+    water_reminders: bool = True
+    water_interval_min: int = 60
+    water_start: str = "08:00"
+    water_end: str = "22:00"
     accent: str = DEFAULT_ACCENT
     notch_bg: str = DEFAULT_NOTCH_BG
 
@@ -60,6 +70,13 @@ def _is_int(v: Any) -> bool:
 
 def _is_number(v: Any) -> bool:
     return isinstance(v, int | float) and not isinstance(v, bool)
+
+
+def _is_hhmm(v: Any) -> bool:
+    if not isinstance(v, str) or len(v) != 5 or v[2] != ":":
+        return False
+    hh, mm = v[:2], v[3:]
+    return hh.isdigit() and mm.isdigit() and int(hh) < 24 and int(mm) < 60
 
 
 def _is_minutes(v: Any) -> bool:
@@ -82,6 +99,12 @@ _VALIDATORS: dict[str, Callable[[Any], bool]] = {
     "long_break_minutes": lambda v: _is_minutes(v),
     "long_break_every": lambda v: _is_int(v) and 1 <= v <= 12,
     "focus_state": lambda v: v is None or isinstance(v, dict),
+    "water_goal_ml": lambda v: _is_int(v) and 250 <= v <= 10_000,
+    "water_cup_ml": lambda v: _is_int(v) and WATER_CUP_RANGE[0] <= v <= WATER_CUP_RANGE[1],
+    "water_reminders": lambda v: isinstance(v, bool),
+    "water_interval_min": lambda v: v in WATER_INTERVALS and not isinstance(v, bool),
+    "water_start": lambda v: _is_hhmm(v),
+    "water_end": lambda v: _is_hhmm(v),
     "accent": is_hex_color,
     "notch_bg": lambda v: v in NOTCH_BACKGROUNDS,
 }
@@ -102,7 +125,11 @@ def from_dict(raw: Any) -> Settings:
             values[f.name] = value
         else:
             log.warning("settings: valor inválido em %r, usando o padrão", f.name)
-    return Settings(**values)
+    result = Settings(**values)
+    if result.water_start >= result.water_end:
+        log.warning("settings: janela da água inválida, usando o padrão")
+        result = replace(result, water_start=Settings.water_start, water_end=Settings.water_end)
+    return result
 
 
 def _migrate(raw: dict[str, Any]) -> dict[str, Any]:

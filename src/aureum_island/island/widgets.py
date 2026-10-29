@@ -76,6 +76,46 @@ class ActionButton(QPushButton):
             painter.drawRoundedRect(inner, inner.height() / 2, inner.height() / 2)
 
 
+class Segments(QWidget):
+    """N segmentos em pílula: os `filled` primeiros em accent, o resto em track."""
+
+    def __init__(
+        self,
+        theme: Theme,
+        width: int,
+        height: int,
+        gap: int,
+        *,
+        total: int = 4,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._theme = theme
+        self._w, self._h, self._gap = width, height, gap
+        self.total = total
+        self.filled = 0
+        theme.changed.connect(self.update)
+        self._resize()
+
+    def set_value(self, filled: int, total: int) -> None:
+        if (filled, total) != (self.filled, self.total):
+            self.filled, self.total = filled, total
+            self._resize()
+            self.update()
+
+    def _resize(self) -> None:
+        self.setFixedSize(self.total * self._w + (self.total - 1) * self._gap, self._h)
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(Qt.PenStyle.NoPen)
+        w, h, gap = self._w, self._h, self._gap
+        for i in range(self.total):
+            painter.setBrush(qcolor(self._theme.accent if i < self.filled else COLORS.track))
+            painter.drawRoundedRect(QRectF(i * (w + gap), 0, w, h), h / 2, h / 2)
+
+
 def line_edit_style(theme: Theme, *, error: bool = False) -> str:
     """Campo de texto no notch (cores e medidas do tema)."""
     border = COLORS.danger_text if error else theme.border_button

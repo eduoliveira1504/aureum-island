@@ -143,6 +143,15 @@ class Pages:
     focus_cycles: int = 4
     water_value_size: int = 38
     water_segments: int = 8
+    water_value_weight: int = 600
+    water_unit_size: int = 13
+    water_segment_width: int = 22
+    water_segment_gap: int = 4
+    water_chart_width: int = 250
+    water_chart_height: int = 96
+    water_bar_gap: int = 4
+    water_bar_min: int = 2
+    water_axis_size: int = 10
     task_checkbox: int = 20
     # Foco
     focus_ring_stroke: int = 8

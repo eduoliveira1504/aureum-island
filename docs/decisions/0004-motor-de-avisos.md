@@ -19,6 +19,7 @@ Tarefas, foco e, mais tarde, água e calendário precisam avisar na hora certa. 
   - pendentes das últimas 12 h viram um único "N avisos perdidos" com "Ver" (abre Tarefas), ou o aviso normal se for só 1, com o horário original no subtítulo;
   - mais antigos que 12 h são gravados com `fired_at = NULL`: marcados, mas nunca mostrados.
   - Relógio adiantado também cai nesta regra.
+  - Lembretes que perdem o sentido se atrasarem (água) usam `Due(stale_ok=False)`: na recuperação são descartados sem mostrar, nunca contam em "N avisos perdidos", e o próximo segue o intervalo normal. Na saída da tela cheia, também não entram na contagem: só o mais recente aparece.
 - **Antecedência.** Global em settings.json (padrão 10 min; 0, 5, 10, 15, 30 ou 60); `remind_offset_min` na tarefa sobrescreve, e nulo usa a global. Eventos do calendário vão usar a mesma regra.
 - **Apresentação fora do motor.** O motor só entrega `Due`s (`fired` ou `missed`). Quem monta o aviso é o app, e a fila do notch decide quando mostrar:
   - um aviso por vez, 8 s, pausa com o mouse em cima ou com o aviso focado;

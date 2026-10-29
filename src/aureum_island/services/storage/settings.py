@@ -20,6 +20,7 @@ SCHEMA_VERSION = 2
 
 MODES = ("normal", "minimal")
 PAGES = ("music", "focus", "water", "tasks", "calendar")
+REMINDER_OFFSETS = (0, 5, 10, 15, 30, 60)
 HOTKEY_STATUSES = ("inactive", "registered", "fallback", "failed", "unsupported")
 
 # Atalho padrão até o schema 1. Em teclado ABNT2, Ctrl+Alt equivale a AltGr; ver 0003.
@@ -35,11 +36,34 @@ class Settings:
     # Preenchidos pelo app ao registrar: qual atalho funcionou e o status (para o Bloco 6).
     hotkey_active: str | None = None
     hotkey_status: str = "inactive"
+    # Avisos
+    reminder_offset_min: int = 10
+    sound_enabled: bool = True
+    sound_volume: float = 0.6
+    native_notifications: bool = False
+    # Foco (minutos) e estado salvo do ciclo atual (pages/focus_model.py)
+    focus_minutes: int = 25
+    short_break_minutes: int = 5
+    long_break_minutes: int = 15
+    long_break_every: int = 4
+    focus_state: dict | None = None
     accent: str = DEFAULT_ACCENT
     notch_bg: str = DEFAULT_NOTCH_BG
 
     def with_changes(self, **changes: Any) -> Settings:
         return replace(self, **changes)
+
+
+def _is_int(v: Any) -> bool:
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
+def _is_number(v: Any) -> bool:
+    return isinstance(v, int | float) and not isinstance(v, bool)
+
+
+def _is_minutes(v: Any) -> bool:
+    return _is_int(v) and 1 <= v <= 240
 
 
 _VALIDATORS: dict[str, Callable[[Any], bool]] = {
@@ -49,6 +73,15 @@ _VALIDATORS: dict[str, Callable[[Any], bool]] = {
     "hotkey": lambda v: isinstance(v, str) and bool(v.strip()),
     "hotkey_active": lambda v: v is None or (isinstance(v, str) and bool(v.strip())),
     "hotkey_status": lambda v: v in HOTKEY_STATUSES,
+    "reminder_offset_min": lambda v: v in REMINDER_OFFSETS and not isinstance(v, bool),
+    "sound_enabled": lambda v: isinstance(v, bool),
+    "sound_volume": lambda v: _is_number(v) and 0.0 <= v <= 1.0,
+    "native_notifications": lambda v: isinstance(v, bool),
+    "focus_minutes": lambda v: _is_minutes(v),
+    "short_break_minutes": lambda v: _is_minutes(v),
+    "long_break_minutes": lambda v: _is_minutes(v),
+    "long_break_every": lambda v: _is_int(v) and 1 <= v <= 12,
+    "focus_state": lambda v: v is None or isinstance(v, dict),
     "accent": is_hex_color,
     "notch_bg": lambda v: v in NOTCH_BACKGROUNDS,
 }

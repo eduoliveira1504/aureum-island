@@ -1,8 +1,9 @@
-"""Monta o app: configurações, tema, notch, atalho global, tela cheia e tray."""
+"""Monta o app: configurações, tema, notch, serviços, avisos, atalho global, tela cheia e tray."""
 
 from __future__ import annotations
 
 import logging
+from datetime import datetime
 
 from PySide6.QtCore import QObject
 from PySide6.QtGui import QAction
@@ -10,16 +11,34 @@ from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from aureum_island.island import icons
 from aureum_island.island.controller import IslandController
+from aureum_island.island.notices import Notice, NoticeAction, NoticeCenter, collapse_missed
+from aureum_island.pages.focus import FocusPage
+from aureum_island.pages.focus_model import FocusConfig, FocusState, Phase
+from aureum_island.pages.tasks import TasksPage
+from aureum_island.services import focus as focus_service
+from aureum_island.services import tasks as task_service
+from aureum_island.services.focus import FocusService
 from aureum_island.services.fullscreen import create_fullscreen_watcher
 from aureum_island.services.hotkey import GlobalHotkey
-from aureum_island.services.storage import paths, settings
+from aureum_island.services.reminders import Due, ReminderEngine
+from aureum_island.services.sound import Sound
+from aureum_island.services.storage import db, paths, settings
 from aureum_island.services.storage.settings import Settings
+from aureum_island.services.storage.tasks import TaskRepo
 from aureum_island.services.system_events import SystemEvents
+from aureum_island.services.tasks import TaskService
 from aureum_island.theme.theme import Theme
+from aureum_island.theme.tokens import NOTICE
 
 log = logging.getLogger(__name__)
 
 _TRAY_ICON_SIZE = 32
+_BREAK_NAME = {Phase.SHORT_BREAK: "pausa curta", Phase.LONG_BREAK: "pausa longa"}
+
+
+def _hhmm(dt: datetime) -> str:
+    local = dt.astimezone()
+    return f"{local.hour:02d}:{local.minute:02d}"
 
 
 class AureumIsland(QObject):
@@ -29,40 +48,91 @@ class AureumIsland(QObject):
         self._settings_path = paths.settings_path()
         self.settings = settings.load(self._settings_path)
         self.theme = Theme.from_settings(self.settings, self)
+        self.conn = db.connect(paths.db_path())
+
+        # Serviços (provedores de avisos)
+        self.tasks = TaskService(
+            TaskRepo(self.conn),
+            global_offset=lambda: self.settings.reminder_offset_min,
+            parent=self,
+        )
+        s = self.settings
+        state = FocusState.from_dict(s.focus_state) if s.focus_state else None
+        self.focus = FocusService(
+            FocusConfig(
+                s.focus_minutes, s.short_break_minutes, s.long_break_minutes, s.long_break_every
+            ),
+            state,
+            save=lambda data: self.update_settings(focus_state=data),
+            parent=self,
+        )
+
+        # Páginas reais deste bloco; as outras seguem provisórias.
+        self.tasks_page = TasksPage(
+            self.tasks, self.theme, global_offset=lambda: self.settings.reminder_offset_min
+        )
+        self.focus_page = FocusPage(self.focus, self.theme)
 
         self.controller = IslandController(
             self.theme,
-            minimal=self.settings.mode == "minimal",
-            last_page=self.settings.last_page,
+            minimal=s.mode == "minimal",
+            last_page=s.last_page,
+            page_widgets={"tasks": self.tasks_page, "focus": self.focus_page},
             parent=self,
         )
         self.controller.page_changed.connect(lambda page: self.update_settings(last_page=page))
         self.controller.settings_requested.connect(
             lambda: log.info("Configurações: chega no Bloco 6")
         )
+        self.tasks_page.keyboard_requested.connect(self.controller.request_keyboard)
+        self.tasks_page.popup_closed.connect(self.controller.popup_closed)
 
+        # Som, tray e avisos
+        self.sound = Sound(self)
+        self.sound.configure(enabled=s.sound_enabled, volume=s.sound_volume)
+        self.tray = self._build_tray()
+        self.notices = NoticeCenter(
+            self.controller,
+            play_sound=self.sound.play,
+            native=self._native_notification,
+            open_tasks=lambda: self.controller.open_page("tasks"),
+            parent=self,
+        )
+
+        # Motor de avisos
+        self.reminders = ReminderEngine(self.conn, parent=self)
+        self.reminders.register(self.tasks)
+        self.reminders.register(self.focus)
+        self.reminders.fired.connect(self._on_fired)
+        self.reminders.missed.connect(self._on_missed)
+
+        # Eventos do Windows
         self.events = SystemEvents(self)
-        self.events.time_changed.connect(self.controller.notch.clock.refresh)
-        self.events.resumed.connect(self.controller.notch.clock.refresh)
+        for signal in (self.events.time_changed, self.events.resumed):
+            signal.connect(self.controller.notch.clock.refresh)
+            signal.connect(self.reminders.catch_up)
 
         self.hotkey = GlobalHotkey(self.events, self)
         self.hotkey.activated.connect(self.controller.toggle)
-        self.hotkey.register(self.settings.hotkey)
+        self.hotkey.register(s.hotkey)
         self.update_settings(
             hotkey_active=self.hotkey.active, hotkey_status=self.hotkey.status.value
         )
 
         self.fullscreen = create_fullscreen_watcher(self, debug=debug_paint)
         self.fullscreen.fullscreen_changed.connect(self.controller.set_suppressed)
-        if self.settings.hide_on_fullscreen:
+        if s.hide_on_fullscreen:
             self.fullscreen.start()
 
-        self.tray = self._build_tray()
         app.aboutToQuit.connect(self._shutdown)
 
     def start(self) -> None:
         self.controller.show()
         self.tray.show()
+        if self.settings.sound_enabled:
+            self.sound.preload()
+        self.reminders.start()  # perdidos com o app fechado
+        self.focus.settle()  # fase que venceu há mais de 12 h (sem aviso)
 
     def update_settings(self, **changes) -> Settings:
         self.settings = self.settings.with_changes(**changes)
@@ -71,6 +141,70 @@ class AureumIsland(QObject):
         except OSError:
             log.exception("não foi possível salvar as configurações")
         return self.settings
+
+    # --- avisos -------------------------------------------------------------
+
+    def _on_fired(self, dues: list[Due]) -> None:
+        for due in dues:
+            notice = self._notice_for(due, missed=False)
+            if notice is not None:
+                self.notices.push(notice)
+
+    def _on_missed(self, dues: list[Due]) -> None:
+        notices = [n for d in dues if (n := self._notice_for(d, missed=True)) is not None]
+        see = lambda: self.controller.open_page("tasks")  # noqa: E731
+        self.notices.push_many(collapse_missed(notices, "Enquanto você estava fora", see))
+
+    def _notice_for(self, due: Due, *, missed: bool) -> Notice | None:
+        if due.item_type == task_service.ITEM_TYPE:
+            task = self.tasks.get(due.item_id)
+            if task is None or task.done:
+                return None
+            when = _hhmm(task.due_at) if task.due_at else _hhmm(due.fire_at)
+            return Notice(
+                title=task.title,
+                subtitle=f"Era às {when}" if missed else f"Às {when}",
+                icon="tasks",
+                kind="task",
+                actions=[
+                    NoticeAction("+10 min", lambda: self.tasks.snooze(task.id)),
+                    NoticeAction("Feito", lambda: self.tasks.set_done(task.id), primary=True),
+                ],
+            )
+        if due.item_type == focus_service.ITEM_TYPE:
+            ended = self.focus.settle()
+            if ended is None:
+                return None
+            state, config = self.focus.model.state, self.focus.model.config
+            if ended is Phase.FOCUS:
+                minutes = int(config.duration(state.phase).total_seconds() // 60)
+                subtitle = f"Hora de uma {_BREAK_NAME[state.phase]} de {minutes} min"
+                title, action = "Foco concluído", "Iniciar pausa"
+            else:
+                subtitle = f"Pronto para o ciclo {state.cycle} de {config.long_break_every}"
+                title, action = "Pausa concluída", "Iniciar foco"
+            if missed:
+                subtitle = f"Terminou às {_hhmm(due.fire_at)}"
+            return Notice(
+                title=title,
+                subtitle=subtitle,
+                icon="focus",
+                kind="focus",
+                actions=[NoticeAction(action, self.focus.start, primary=True)],
+            )
+        log.warning("aviso de tipo desconhecido: %s", due.item_type)
+        return None
+
+    def _native_notification(self, notice: Notice) -> None:
+        if self.settings.native_notifications and self.tray.isVisible():
+            self.tray.showMessage(
+                notice.title,
+                notice.subtitle,
+                QSystemTrayIcon.MessageIcon.Information,
+                NOTICE.duration_ms,
+            )
+
+    # --- tray ---------------------------------------------------------------
 
     def _build_tray(self) -> QSystemTrayIcon:
         tray = QSystemTrayIcon(icons.icon("app", self.theme.accent, _TRAY_ICON_SIZE), self)
@@ -103,3 +237,4 @@ class AureumIsland(QObject):
         self.fullscreen.stop()
         self.events.close()
         self.tray.hide()
+        self.conn.close()

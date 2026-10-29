@@ -7,7 +7,7 @@ segunda janela, transparente a cliques, logo abaixo no z-order.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 
 from PySide6.QtCore import QEvent, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QGraphicsOpacityEffect, QStackedWidget, QVBoxLayou
 
 from aureum_island.island.clock import ClockView
 from aureum_island.island.geometry import Shape
+from aureum_island.island.notices import NoticeView
 from aureum_island.island.page_bar import PageBar
 from aureum_island.island.state import State
 from aureum_island.pages import PageInfo
@@ -51,13 +52,21 @@ def notch_path(
 class OpenView(QWidget):
     """Conteúdo do notch aberto: páginas (178) + barra (46)."""
 
-    def __init__(self, pages: Sequence[PageInfo], theme: Theme, parent: QWidget) -> None:
+    def __init__(
+        self,
+        pages: Sequence[PageInfo],
+        theme: Theme,
+        parent: QWidget,
+        page_widgets: Mapping[str, QWidget] | None = None,
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("open-view")
         self.stack = QStackedWidget(self)
         self.stack.setFixedHeight(NOTCH.open_content_height)
+        page_widgets = page_widgets or {}
         for page in pages:
-            self.stack.addWidget(PlaceholderPage(page, self.stack))
+            widget = page_widgets.get(page.id) or PlaceholderPage(page)
+            self.stack.addWidget(widget)
         self.bar = PageBar(pages, theme, self)
         self.bar.page_changed.connect(self.stack.setCurrentIndex)
         layout = QVBoxLayout(self)
@@ -78,7 +87,12 @@ class NotchWindow(QWidget):
     escape_pressed = Signal()
     deactivated = Signal()
 
-    def __init__(self, pages: Sequence[PageInfo], theme: Theme) -> None:
+    def __init__(
+        self,
+        pages: Sequence[PageInfo],
+        theme: Theme,
+        page_widgets: Mapping[str, QWidget] | None = None,
+    ) -> None:
         super().__init__(None, _FLAGS)
         self.setObjectName("notch")
         self.setWindowTitle("Aureum Island")
@@ -91,8 +105,13 @@ class NotchWindow(QWidget):
         self._was_active = False
 
         self.clock = ClockView(theme, self)
-        self.open_view = OpenView(pages, theme, self)
-        self._views: dict[State, QWidget] = {State.CLOSED: self.clock, State.OPEN: self.open_view}
+        self.open_view = OpenView(pages, theme, self, page_widgets)
+        self.notice_view = NoticeView(theme, self)
+        self._views: dict[State, QWidget] = {
+            State.CLOSED: self.clock,
+            State.OPEN: self.open_view,
+            State.NOTICE: self.notice_view,
+        }
         for view in self._views.values():
             view.hide()
         self._fading: QWidget | None = None

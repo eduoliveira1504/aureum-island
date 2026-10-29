@@ -49,7 +49,10 @@ def test_failed_migration_rolls_back(tmp_path, monkeypatch):
     raw = sqlite3.connect(path)
     names = {r[0] for r in raw.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     assert "ok" not in names
-    assert raw.execute("SELECT MAX(version) FROM schema_version").fetchone()[0] == 1
+    assert (
+        raw.execute("SELECT MAX(version) FROM schema_version").fetchone()[0]
+        == len(db.MIGRATIONS) - 1
+    )
     raw.close()
 
 

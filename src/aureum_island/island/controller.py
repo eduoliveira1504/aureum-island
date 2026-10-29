@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import contextlib
 import logging
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 from PySide6.QtCore import QEasingCurve, QObject, QRect, QTimer, QVariantAnimation, Signal
-from PySide6.QtGui import QGuiApplication, QScreen
-from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QCursor, QGuiApplication, QScreen
+from PySide6.QtWidgets import QApplication, QWidget
 
 from aureum_island.island import win32
 from aureum_island.island.geometry import (
@@ -70,6 +70,9 @@ def _to_qrect(rect: Rect) -> QRect:
 class IslandController(QObject):
     page_changed = Signal(str)  # id da página
     settings_requested = Signal()
+    hover_changed = Signal(bool)
+    suppressed_changed = Signal(bool)
+    notice_focus_changed = Signal(bool)  # aviso com foco de teclado (atalho/clique)
 
     def __init__(
         self,
@@ -77,11 +80,12 @@ class IslandController(QObject):
         *,
         minimal: bool = False,
         last_page: str = PAGES[0].id,
+        page_widgets: Mapping[str, QWidget] | None = None,
         parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self.machine = IslandStateMachine(QtScheduler(self), minimal=minimal)
-        self.notch = NotchWindow(PAGES, theme)
+        self.notch = NotchWindow(PAGES, theme, page_widgets)
         self.shadow = ShadowWindow(theme)
         self._shape = shape_for(self.machine.state)
         self._shadow_strength = 0.0
@@ -90,7 +94,7 @@ class IslandController(QObject):
         self._screen: QScreen | None = None
         self._suppressed = False
 
-        ids = [p.id for p in PAGES]
+        ids = self._page_ids = [p.id for p in PAGES]
         self.notch.open_view.set_page(ids.index(last_page) if last_page in ids else 0)
         self.notch.open_view.bar.page_changed.connect(lambda i: self.page_changed.emit(ids[i]))
         self.notch.open_view.bar.settings_requested.connect(self.settings_requested)
@@ -100,6 +104,7 @@ class IslandController(QObject):
         self.notch.escape_pressed.connect(self.machine.escape)
         self.notch.deactivated.connect(self._on_deactivated)
         self.machine.add_listener(self._on_state)
+        self.notch.destroyed.connect(self._stop_animation)
 
         app = QGuiApplication.instance()
         app.primaryScreenChanged.connect(self._bind_screen)
@@ -136,12 +141,16 @@ class IslandController(QObject):
         else:
             self._apply(self._shape, 0.0)
             self.notch.show()
+        self.suppressed_changed.emit(suppressed)
 
     def set_minimal(self, minimal: bool) -> None:
         self.machine.set_minimal(minimal)
 
     def toggle(self) -> None:
-        """Atalho global / tray: abre com foco ou fecha."""
+        """Atalho global / tray: abre com foco ou fecha. Com aviso na tela, foca o aviso."""
+        if self.machine.state is State.NOTICE:
+            self.focus_notice()
+            return
         if self._suppressed and not self.notch.isVisible():
             self._apply(self._shape, 0.0)
             self.notch.show()
@@ -152,6 +161,42 @@ class IslandController(QObject):
             self._apply(self._shape, 0.0)
             self.notch.show()
         self.machine.open(focus=True, reason="tray")
+
+    def open_page(self, page_id: str) -> None:
+        """Abre o notch com foco já na página pedida (ex.: "Ver" nos avisos perdidos)."""
+        if page_id in self._page_ids:
+            self.notch.open_view.set_page(self._page_ids.index(page_id))
+            self.page_changed.emit(page_id)
+        self.open()
+
+    def request_keyboard(self) -> None:
+        """Uma página precisa de teclado (campo de texto): o notch passa a ter foco."""
+        if self.machine.state is State.OPEN and not self.machine.pinned:
+            self.machine.open(focus=True, reason="keyboard")
+
+    def popup_closed(self) -> None:
+        """Menu de contexto fechou: se o mouse ficou fora do notch, vale como saída."""
+        if not self.notch.geometry().contains(QCursor.pos()):
+            self.machine.mouse_leave()
+
+    # --- avisos -------------------------------------------------------------
+
+    def present_notice(self, notice) -> bool:
+        if self._suppressed:
+            return False
+        self.notch.notice_view.set_notice(notice)
+        return self.machine.show_notice()
+
+    def dismiss_notice(self) -> None:
+        self.machine.dismiss_notice()
+
+    def focus_notice(self) -> None:
+        if self.machine.state is not State.NOTICE:
+            return
+        win32.set_no_activate(self.notch, False)
+        self.notch.activateWindow()
+        self.notch.notice_view.focus_primary()
+        self.notice_focus_changed.emit(True)
 
     # --- tela ---------------------------------------------------------------
 
@@ -173,16 +218,18 @@ class IslandController(QObject):
         self._apply(self._shape, self._shadow_strength)
 
     def _screen_rect(self) -> Rect:
-        screen = self._screen or QGuiApplication.primaryScreen()
+        # Sempre a tela principal atual (o objeto guardado pode ter sido removido).
         # geometry(), não availableGeometry(): o notch fica por cima da barra de tarefas.
-        return _to_rect(screen.geometry())
+        return _to_rect(QGuiApplication.primaryScreen().geometry())
 
     # --- entrada ------------------------------------------------------------
 
     def _on_hover(self, inside: bool) -> None:
+        self.hover_changed.emit(inside)
         if inside:
             self.machine.mouse_enter()
-        else:
+        elif QApplication.activePopupWidget() is None:
+            # Com um menu aberto, a saída é decidida quando ele fechar (popup_closed).
             self.machine.mouse_leave()
 
     def _on_deactivated(self) -> None:
@@ -190,6 +237,7 @@ class IslandController(QObject):
             # A sombra não deveria receber foco; se recebeu, devolve ao notch.
             self.notch.activateWindow()
             return
+        self.notice_focus_changed.emit(False)
         self.machine.focus_lost()
 
     def _on_pressed(self) -> None:
@@ -197,6 +245,8 @@ class IslandController(QObject):
         # muda a regra (e, com WS_EX_NOACTIVATE, não tira o foco do app do usuário).
         if self.machine.at_rest:
             self.machine.open(focus=True, reason="click")
+        elif self.machine.state is State.NOTICE:
+            self.focus_notice()
 
     # --- transições ---------------------------------------------------------
 
@@ -228,7 +278,7 @@ class IslandController(QObject):
         self._stop_animation()
         start_shape, start_strength = self._shape, self._shadow_strength
         end_shape = shape_for(target)
-        end_strength = 1.0 if target is State.OPEN else 0.0
+        end_strength = 1.0 if target in (State.OPEN, State.NOTICE) else 0.0
         self.notch.begin_transition(target)
         if end_strength > 0 and not self.shadow.isVisible() and self.notch.isVisible():
             self._apply(start_shape, start_strength)

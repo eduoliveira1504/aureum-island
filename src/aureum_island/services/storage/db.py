@@ -60,6 +60,10 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY (item_type, item_id, fire_at)
     );
     """,
+    # 2: adiar avisos de tarefa ("+10 min")
+    """
+    ALTER TABLE tasks ADD COLUMN snoozed_until TEXT;
+    """,
 ]
 
 

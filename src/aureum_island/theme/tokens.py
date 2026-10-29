@@ -122,6 +122,7 @@ class Motion:
     transition_ms: int = 220
     # Fração da transição a partir da qual o conteúdo novo aparece (fade até o fim).
     content_fade_start: float = 0.6
+    undo_ms: int = 5000  # "Desfazer" na linha da tarefa excluída
 
 
 MOTION = Motion()
@@ -143,6 +144,38 @@ class Pages:
     water_value_size: int = 38
     water_segments: int = 8
     task_checkbox: int = 20
+    # Foco
+    focus_ring_stroke: int = 8
+    focus_time_size: int = 28
+    focus_time_weight: int = 600
+    focus_padding_x: int = 32
+    focus_column_gap: int = 28
+    focus_segment_width: int = 28
+    focus_segment_height: int = 4
+    focus_segment_gap: int = 6
+    # Tarefas
+    tasks_padding_x: int = 20
+    tasks_padding_top: int = 10
+    task_row_height: int = 30
+    task_title_size: int = 13
+    task_time_size: int = 12
+    task_pill_height: int = 20
+    task_pill_padding_x: int = 8
+    task_input_height: int = 30
+    task_time_input_width: int = 64
+    task_spacing: int = 8
+    scrollbar_width: int = 6
+    scrollbar_min_handle: int = 20
+    menu_padding: int = 4
+    menu_item_padding_y: int = 6
+    menu_item_padding_x: int = 16
+    menu_radius: int = 6
+    # Botões de ação (aviso, foco, tarefas)
+    button_height: int = 30
+    button_padding_x: int = 12
+    button_font_size: int = 12
+    button_font_weight: int = 600
+    button_gap: int = 6
 
 
 PAGES = Pages()
@@ -161,6 +194,10 @@ class Notice:
     subtitle_size: int = 11
     action_height: int = 30
     duration_ms: int = 8000
+    padding_x: int = 14
+    gap: int = 10
+    icon_glyph: int = 18
+    icon_bg_alpha: float = 0.14
 
 
 NOTICE = Notice()

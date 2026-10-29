@@ -137,12 +137,13 @@ def test_clock_arms_single_timer(qtbot, theme):
 
 
 @pytest.fixture
-def controller(qtbot, theme):
+def controller(qtbot, theme, dispose):
     ctrl = IslandController(theme, last_page="water")
     qtbot.addWidget(ctrl.notch)
     qtbot.addWidget(ctrl.shadow)
     ctrl.show()
-    return ctrl
+    yield ctrl
+    dispose(ctrl)
 
 
 def test_controller_opens_and_closes_with_animation(qtbot, controller):
@@ -178,12 +179,13 @@ def test_controller_hides_on_fullscreen(qtbot, controller):
     assert controller.notch.size().toTuple() == (190, 34)
 
 
-def test_minimal_mode_size(qtbot, theme):
+def test_minimal_mode_size(qtbot, theme, dispose):
     ctrl = IslandController(theme, minimal=True)
     qtbot.addWidget(ctrl.notch)
     qtbot.addWidget(ctrl.shadow)
     ctrl.show()
     assert ctrl.notch.size().toTuple() == (150, 6)
+    dispose(ctrl)
 
 
 # --- serviços ----------------------------------------------------------------

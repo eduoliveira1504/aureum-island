@@ -64,6 +64,18 @@ MIGRATIONS: list[str] = [
     """
     ALTER TABLE tasks ADD COLUMN snoozed_until TEXT;
     """,
+    # 3: cache de letras (LRCLIB)
+    """
+    CREATE TABLE lyrics_cache (
+        key TEXT PRIMARY KEY,
+        status TEXT NOT NULL CHECK (status IN ('synced', 'plain', 'instrumental', 'not_found')),
+        content TEXT NOT NULL DEFAULT '',
+        size INTEGER NOT NULL DEFAULT 0,
+        fetched_at TEXT NOT NULL,
+        last_used_at TEXT NOT NULL
+    );
+    CREATE INDEX lyrics_cache_lru ON lyrics_cache (last_used_at);
+    """,
 ]
 
 

@@ -14,6 +14,7 @@ from aureum_island.island.controller import IslandController
 from aureum_island.island.notices import Notice, NoticeAction, NoticeCenter, collapse_missed
 from aureum_island.pages.focus import FocusPage
 from aureum_island.pages.focus_model import FocusConfig, FocusState, Phase
+from aureum_island.pages.music import MusicPage
 from aureum_island.pages.tasks import TasksPage
 from aureum_island.pages.water import WaterPage, format_ml
 from aureum_island.pages.water_model import WaterConfig, parse_time
@@ -23,6 +24,8 @@ from aureum_island.services import water as water_service
 from aureum_island.services.focus import FocusService
 from aureum_island.services.fullscreen import create_fullscreen_watcher
 from aureum_island.services.hotkey import GlobalHotkey
+from aureum_island.services.lyrics import LyricsService
+from aureum_island.services.media import create_media_service
 from aureum_island.services.reminders import Due, ReminderEngine
 from aureum_island.services.sound import Sound
 from aureum_island.services.storage import db, paths, settings
@@ -30,6 +33,7 @@ from aureum_island.services.storage.settings import Settings
 from aureum_island.services.storage.tasks import TaskRepo
 from aureum_island.services.system_events import SystemEvents
 from aureum_island.services.tasks import TaskService
+from aureum_island.services.volume import create_volume_service
 from aureum_island.services.water import WaterService
 from aureum_island.theme.theme import Theme
 from aureum_island.theme.tokens import NOTICE
@@ -72,6 +76,11 @@ class AureumIsland(QObject):
         )
 
         self.water = WaterService(self.conn, config=self._water_config, parent=self)
+        self.media = create_media_service(self)
+        self.volume = create_volume_service(self)
+        self.lyrics = LyricsService(
+            self.conn, enabled=lambda: self.settings.lyrics_enabled, parent=self
+        )
 
         # Páginas reais; as outras seguem provisórias.
         self.tasks_page = TasksPage(
@@ -79,6 +88,7 @@ class AureumIsland(QObject):
         )
         self.focus_page = FocusPage(self.focus, self.theme)
         self.water_page = WaterPage(self.water, self.theme)
+        self.music_page = MusicPage(self.media, self.volume, self.lyrics, self.theme)
 
         self.controller = IslandController(
             self.theme,
@@ -88,6 +98,7 @@ class AureumIsland(QObject):
                 "tasks": self.tasks_page,
                 "focus": self.focus_page,
                 "water": self.water_page,
+                "music": self.music_page,
             },
             parent=self,
         )
@@ -141,6 +152,7 @@ class AureumIsland(QObject):
     def start(self) -> None:
         self.controller.show()
         self.tray.show()
+        self.media.start()
         if self.settings.sound_enabled:
             self.sound.preload()
         self.reminders.start()  # perdidos com o app fechado
@@ -270,6 +282,8 @@ class AureumIsland(QObject):
             self.controller.open()
 
     def _shutdown(self) -> None:
+        self.media.stop()
+        self.volume.close()
         self.hotkey.unregister()
         self.fullscreen.stop()
         self.events.close()

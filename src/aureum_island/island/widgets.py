@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QFontMetrics, QPainter, QPen
-from PySide6.QtWidgets import QPushButton, QWidget
+from PySide6.QtWidgets import QPushButton, QSlider, QToolButton, QWidget
 
+from aureum_island.island import icons
 from aureum_island.theme import color
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
@@ -114,6 +115,151 @@ class Segments(QWidget):
         for i in range(self.total):
             painter.setBrush(qcolor(self._theme.accent if i < self.filled else COLORS.track))
             painter.drawRoundedRect(QRectF(i * (w + gap), 0, w, h), h / 2, h / 2)
+
+
+class IconButton(QToolButton):
+    """Botão redondo só com ícone. `primary`: círculo em accent (ex.: play de 42 px)."""
+
+    def __init__(
+        self,
+        icon_name: str,
+        label: str,
+        theme: Theme,
+        *,
+        size: int,
+        icon_size: int,
+        primary: bool = False,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._theme = theme
+        self._icon_size = icon_size
+        self.primary = primary
+        self.icon_name = icon_name
+        self.setFixedSize(size, size)
+        self.setAutoRaise(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.TabFocus)
+        self.set_label(label)
+        theme.changed.connect(self.update)
+
+    def set_icon(self, icon_name: str, label: str) -> None:
+        if (icon_name, label) != (self.icon_name, self.accessibleName()):
+            self.icon_name = icon_name
+            self.set_label(label)
+            self.update()
+
+    def set_label(self, label: str) -> None:
+        self.setAccessibleName(label)
+        self.setToolTip(label)
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        theme = self._theme
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        hovered = self.isEnabled() and (self.underMouse() or self.isDown())
+        if self.primary:
+            fill = (
+                color.mix(theme.accent, COLORS.on_accent_light, 0.12) if hovered else theme.accent
+            )
+            if not self.isEnabled():
+                fill = COLORS.track
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(qcolor(fill))
+            painter.drawEllipse(rect)
+            glyph_color = theme.on_accent if self.isEnabled() else COLORS.text_dim
+        else:
+            if hovered:
+                painter.setPen(Qt.PenStyle.NoPen)
+                painter.setBrush(qcolor(color.with_alpha(theme.accent, BORDER_ALPHA_DIVIDER)))
+                painter.drawEllipse(rect)
+            glyph_color = COLORS.text if self.isEnabled() else COLORS.text_dim
+        size = self._icon_size
+        pm = icons.pixmap(self.icon_name, glyph_color, size, self.devicePixelRatioF())
+        painter.drawPixmap(int((self.width() - size) / 2), int((self.height() - size) / 2), pm)
+        if self.hasFocus():
+            ring = NOTCH.focus_ring_width
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(qcolor(COLORS.text if self.primary else theme.accent), ring))
+            painter.drawEllipse(
+                QRectF(self.rect()).adjusted(ring / 2, ring / 2, -ring / 2, -ring / 2)
+            )
+
+
+class ThemedSlider(QSlider):
+    """QSlider horizontal desenhado pelo tema (mantém a acessibilidade do QSlider).
+
+    Clicar em qualquer ponto pula para lá. `handle=0` desenha só a barra.
+    """
+
+    def __init__(
+        self, theme: Theme, *, track_height: int, handle: int, parent: QWidget | None = None
+    ) -> None:
+        super().__init__(Qt.Orientation.Horizontal, parent)
+        self._theme = theme
+        self._track_h = track_height
+        self._handle = handle
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.TabFocus)
+        theme.changed.connect(self.update)
+
+    def _value_at(self, x: float) -> int:
+        span = max(1.0, self.width() - self._handle)
+        ratio = min(1.0, max(0.0, (x - self._handle / 2) / span))
+        return round(self.minimum() + ratio * (self.maximum() - self.minimum()))
+
+    def mousePressEvent(self, event) -> None:  # noqa: N802
+        if event.button() == Qt.MouseButton.LeftButton and self.isEnabled():
+            self.setSliderDown(True)
+            self.setSliderPosition(self._value_at(event.position().x()))
+            event.accept()
+            return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event) -> None:  # noqa: N802
+        if self.isSliderDown():
+            self.setSliderPosition(self._value_at(event.position().x()))
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:  # noqa: N802
+        if self.isSliderDown():
+            self.setSliderPosition(self._value_at(event.position().x()))
+            self.setSliderDown(False)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        theme = self._theme
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        span = self.maximum() - self.minimum()
+        ratio = (self.sliderPosition() - self.minimum()) / span if span else 0.0
+        h, handle = self._track_h, self._handle
+        y = (self.height() - h) / 2
+        x0, width = handle / 2, self.width() - handle
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(qcolor(COLORS.track))
+        painter.drawRoundedRect(QRectF(x0, y, width, h), h / 2, h / 2)
+        fill = theme.accent if self.isEnabled() else COLORS.text_dim
+        painter.setBrush(qcolor(fill))
+        if ratio > 0:
+            painter.drawRoundedRect(QRectF(x0, y, width * ratio, h), h / 2, h / 2)
+        cx = x0 + width * ratio
+        if handle and self.isEnabled():
+            painter.setBrush(qcolor(COLORS.text))
+            painter.drawEllipse(
+                QRectF(cx - handle / 2, (self.height() - handle) / 2, handle, handle)
+            )
+        if self.hasFocus():
+            ring = NOTCH.focus_ring_width
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(qcolor(theme.accent), ring))
+            r = QRectF(self.rect()).adjusted(ring / 2, ring / 2, -ring / 2, -ring / 2)
+            painter.drawRoundedRect(r, r.height() / 2, r.height() / 2)
 
 
 def line_edit_style(theme: Theme, *, error: bool = False) -> str:

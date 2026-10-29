@@ -57,6 +57,8 @@ class Settings:
     water_interval_min: int = 60
     water_start: str = "08:00"
     water_end: str = "22:00"
+    # Música: letras via LRCLIB (única chamada externa do app)
+    lyrics_enabled: bool = True
     accent: str = DEFAULT_ACCENT
     notch_bg: str = DEFAULT_NOTCH_BG
 
@@ -105,6 +107,7 @@ _VALIDATORS: dict[str, Callable[[Any], bool]] = {
     "water_interval_min": lambda v: v in WATER_INTERVALS and not isinstance(v, bool),
     "water_start": lambda v: _is_hhmm(v),
     "water_end": lambda v: _is_hhmm(v),
+    "lyrics_enabled": lambda v: isinstance(v, bool),
     "accent": is_hex_color,
     "notch_bg": lambda v: v in NOTCH_BACKGROUNDS,
 }

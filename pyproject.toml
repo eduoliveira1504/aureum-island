@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "aureum-island"
+version = "0.1.0"
+description = "Dynamic Island para Windows 10/11, da linha Aureum."
+requires-python = ">=3.13"
+dependencies = [
+    "PySide6>=6.8",
+    "keyring",
+    "icalendar",
+    "recurring-ical-events",
+    "pycaw; sys_platform == \"win32\"",
+    "winrt-runtime; sys_platform == \"win32\"",
+    "winrt-Windows.Media.Control; sys_platform == \"win32\"",
+    "winrt-Windows.Foundation; sys_platform == \"win32\"",
+    "winrt-Windows.Storage.Streams; sys_platform == \"win32\"",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-qt",
+    "ruff",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/aureum_island"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+qt_api = "pyside6"

@@ -5,13 +5,14 @@ Visual: preto quente + dourado Aureum. Notch sempre escuro.
 ## Cores (tokens)
 - accent (padrão Dourado): #E8B531
 - on-accent (texto sobre o destaque): #0A0908 (recalcular contraste ao mudar a cor)
-- notch-bg: #070605 (opções: marrom escuro, grafite)
+- notch-bg: Preto #070605 (padrão), Marrom escuro #1A120C, Grafite #1C1915 (todos com contraste ≥ 4.5:1 para text, text-muted e text-dim)
 - surface: #14110D | panel: #0D0B09 | sidebar: #090806
 - text: #F1E8D3 | text-muted: #A89F88 | text-dim: #8F866F
 - track (barras vazias): #2A2419
 - border: accent com 20% de opacidade (notch), 14% (divisores), 30% (botões)
 - danger: fundo #5A2620, texto #F6D5CE
-- Destaques disponíveis (iguais ao Aureum Voice): Dourado #E8B531, Ametista #9061F9, Esmeralda #3DBE87, Brasa #E5694F, Safira #4A90D9 (os 4 últimos são estimados, conferir no repo do Voice), "Outra" com conta-gotas e campo hex.
+- Destaques disponíveis (iguais ao Aureum Voice): Dourado #E8B531, Ametista #8B5CF6, Esmeralda #3FBF7F, Brasa #E06A4E, Safira #4F8CC9, "Outra" com conta-gotas e campo hex.
+- on-accent e accent-text são calculados a partir do accent (theme/color.py): texto sobre o accent e accent usado como texto sempre com contraste ≥ 4.5:1.
 
 ## Tipografia
 - Títulos pequenos: Cinzel, caixa alta, letter-spacing ~0.18em, 10–11px, cor accent ou text-muted.

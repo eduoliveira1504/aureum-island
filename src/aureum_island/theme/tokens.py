@@ -25,6 +25,7 @@ class Colors:
     danger_text: str = "#F6D5CE"
     on_accent_dark: str = "#0A0908"
     on_accent_light: str = "#FFFFFF"
+    shadow: str = "#000000"
 
 
 COLORS = Colors()
@@ -95,9 +96,35 @@ class Notch:
     page_button_width: int = 42
     page_button_height: int = 34
     page_active_stroke: int = 2
+    page_active_stroke_width: int = 18
+    page_icon: int = 18
+    page_button_gap: int = 4
+    bar_padding_x: int = 18
+    minimal_radius: int = 3
+    closed_gap: int = 8
+    focus_ring_width: int = 2
+    focus_ring_radius: int = 8
+    # Sombra (janela separada, transparente a cliques): só no estado aberto.
+    shadow_margin: int = 24
+    shadow_max_alpha: float = 0.11
+    shadow_falloff: float = 1.2
 
 
 NOTCH = Notch()
+
+# --- Movimento ---------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Motion:
+    hover_open_delay_ms: int = 120
+    hover_close_delay_ms: int = 300
+    transition_ms: int = 220
+    # Fração da transição a partir da qual o conteúdo novo aparece (fade até o fim).
+    content_fade_start: float = 0.6
+
+
+MOTION = Motion()
 
 # --- Páginas -----------------------------------------------------------------
 

@@ -94,7 +94,7 @@ def test_tasks_crud(tmp_path):
 def test_settings_defaults_when_missing(tmp_path):
     loaded = settings.load(tmp_path / "settings.json")
     assert loaded == Settings()
-    assert loaded.hotkey == "Ctrl+Alt+Space"
+    assert loaded.hotkey == "Ctrl+Alt+I"
     assert loaded.hide_on_fullscreen is True
 
 
@@ -151,3 +151,15 @@ def test_atomic_write_keeps_old_file_on_failure(tmp_path, monkeypatch):
 
     assert settings.load(path) == original
     assert [p.name for p in tmp_path.iterdir()] == ["settings.json"]
+
+
+def test_old_default_hotkey_migrates(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text(json.dumps({"schema_version": 1, "hotkey": "Ctrl+Alt+Space"}), encoding="utf-8")
+    assert settings.load(path).hotkey == "Ctrl+Alt+I"
+
+
+def test_custom_hotkey_survives_migration(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text(json.dumps({"schema_version": 1, "hotkey": "Ctrl+Alt+N"}), encoding="utf-8")
+    assert settings.load(path).hotkey == "Ctrl+Alt+N"

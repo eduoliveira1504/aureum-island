@@ -48,6 +48,9 @@ class AureumIsland(QObject):
         self.hotkey = GlobalHotkey(self.events, self)
         self.hotkey.activated.connect(self.controller.toggle)
         self.hotkey.register(self.settings.hotkey)
+        self.update_settings(
+            hotkey_active=self.hotkey.active, hotkey_status=self.hotkey.status.value
+        )
 
         self.fullscreen = create_fullscreen_watcher(self, debug=debug_paint)
         self.fullscreen.fullscreen_changed.connect(self.controller.set_suppressed)

@@ -14,7 +14,9 @@ O notch fica sempre por cima de tudo, no topo do monitor principal, onde também
 - **Sombra numa segunda janela, transparente a input** (`WindowTransparentForInput` = `WS_EX_TRANSPARENT`, `WindowDoesNotAcceptFocus`). Fica logo abaixo do notch no z-order (`SetWindowPos` com o notch como referência). Margem de 24px, e só existe no estado aberto. Motivo: uma margem desenhada na própria janela roubaria cliques das abas do navegador. Um único `QVariantAnimation` atualiza as duas geometrias no mesmo tick; parada, a sombra não redesenha. Plano B, se houver descompasso visível: só escurecimento interno, sem sombra externa.
 - **Hover por evento** (`enterEvent`/`leaveEvent`), sem polling do cursor. Os atrasos (120 ms para abrir, 300 ms para fechar) são timers singleShot que só existem enquanto agendados. A lógica fica em `island/state.py`, testável sem UI.
 - **Foco.** Aberto por hover, o notch fecha ao tirar o mouse, e `WS_EX_NOACTIVATE` impede que clicar nele tire o foco do app do usuário. Aberto por atalho ou clique, o `WS_EX_NOACTIVATE` sai, a janela recebe foco (Tab, setas, Esc) e fecha com Esc ou perda de foco. Se o Windows negar o foco, o notch volta à regra do hover para não ficar preso aberto.
-- **Atalho global com `RegisterHotKey`** (padrão Ctrl+Alt+Espaço, salvo em settings.json). Não é hook de teclado: o Windows só avisa quando a combinação registrada é pressionada, e o app não lê nenhuma outra tecla. Por isso não fere a regra de "sem hook global". Se a combinação já estiver em uso, o app loga e expõe o status para a tela de Configurações. O atalho é desregistrado ao sair.
+- **Atalho global com `RegisterHotKey`** (salvo em settings.json). Não é hook de teclado: o Windows só avisa quando a combinação registrada é pressionada, e o app não lê nenhuma outra tecla. Por isso não fere a regra de "sem hook global". O atalho é desregistrado ao sair.
+  - **Padrão Ctrl+Alt+I.** Em teclado ABNT2, Ctrl+Alt equivale a AltGr: um atalho Ctrl+Alt+<tecla> bloqueia, em todos os apps, o caractere que o AltGr gera com aquela tecla. Por isso nenhum padrão usa Q, W, E, C, 1–6, =, [, ], / ou ; (`ALTGR_RESERVED`, coberto por teste). O padrão antigo, Ctrl+Alt+Espaço, conflitava com outro programa na máquina de desenvolvimento e é migrado (schema 2 do settings.json).
+  - **Se o registro falhar**, o app tenta em ordem Ctrl+Alt+I, Ctrl+Alt+K e Ctrl+Shift+Alt+I. Grava em settings.json qual funcionou (`hotkey_active`) e o status (`registered`, `fallback`, `failed`), para a tela de Configurações mostrar o aviso. Nada quebra; sem atalho, o tray tem "Abrir".
 - **Tela cheia com `SetWinEventHook`**, por evento:
   - `EVENT_SYSTEM_FOREGROUND` acompanha a janela em primeiro plano.
   - `EVENT_OBJECT_LOCATIONCHANGE` é restrito ao processo dessa janela e recriado a cada troca. Ele cobre o app que já está na frente e entra em tela cheia (F11, vídeo).
@@ -26,5 +28,5 @@ O notch fica sempre por cima de tudo, no topo do monitor principal, onde também
 ## Consequences
 
 - São duas janelas nativas para manter em sincronia. Se o descompasso aparecer em alguma máquina, o plano B está definido.
-- Se outro app já usa a combinação do atalho, o usuário precisa trocá-la (Bloco 6). Até lá, o tray tem "Abrir".
+- Se o atalho escolhido e os três fallbacks estiverem em uso, o usuário precisa trocá-lo (Bloco 6). Até lá, o tray tem "Abrir".
 - `ctypes` com Win32 em três módulos pequenos (`island/win32.py`, `services/hotkey.py`, `services/fullscreen.py`), todos com caminho no-op.

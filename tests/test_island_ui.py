@@ -190,7 +190,7 @@ def test_minimal_mode_size(qtbot, theme):
 
 
 def test_parse_hotkey():
-    hk = parse_hotkey("Ctrl+Alt+Space")
+    hk = parse_hotkey("Ctrl+Alt+Space")  # parser aceita; só não é o padrão
     assert hk.modifiers == MOD_CONTROL | MOD_ALT
     assert hk.vk == 0x20
     assert parse_hotkey("ctrl + shift + f12").modifiers == MOD_CONTROL | MOD_SHIFT
@@ -205,3 +205,27 @@ def test_fullscreen_watcher_is_noop_offscreen(qapp):
     watcher.start()
     assert not watcher.fullscreen
     watcher.stop()
+
+
+def test_default_and_fallback_hotkeys_avoid_altgr_keys():
+    from aureum_island.services.hotkey import (
+        ALTGR_RESERVED,
+        DEFAULT_HOTKEY,
+        FALLBACK_HOTKEYS,
+    )
+    from aureum_island.services.storage.settings import Settings
+
+    assert Settings().hotkey == DEFAULT_HOTKEY == "Ctrl+Alt+I"
+    for text in (DEFAULT_HOTKEY, *FALLBACK_HOTKEYS):
+        key = text.split("+")[-1].lower()
+        assert key not in ALTGR_RESERVED, text
+        parse_hotkey(text)
+
+
+def test_hotkey_candidates_order_without_duplicates():
+    from aureum_island.services.hotkey import candidates
+
+    assert candidates("Ctrl+Alt+I") == ["Ctrl+Alt+I", "Ctrl+Alt+K", "Ctrl+Shift+Alt+I"]
+    assert candidates("alt+ctrl+i") == ["alt+ctrl+i", "Ctrl+Alt+K", "Ctrl+Shift+Alt+I"]
+    assert candidates("Ctrl+Alt+N")[0] == "Ctrl+Alt+N"
+    assert len(candidates("Ctrl+Alt+N")) == 4

@@ -76,6 +76,14 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX lyrics_cache_lru ON lyrics_cache (last_used_at);
     """,
+    # 4: estado da sincronização ICS (cache HTTP e última tentativa)
+    """
+    ALTER TABLE ics_sources ADD COLUMN etag TEXT;
+    ALTER TABLE ics_sources ADD COLUMN last_modified TEXT;
+    ALTER TABLE ics_sources ADD COLUMN parsed_at TEXT;
+    ALTER TABLE ics_sources ADD COLUMN last_attempt_at TEXT;
+    ALTER TABLE ics_sources ADD COLUMN last_status TEXT;
+    """,
 ]
 
 

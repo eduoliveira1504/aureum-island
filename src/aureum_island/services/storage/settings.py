@@ -59,6 +59,8 @@ class Settings:
     water_end: str = "22:00"
     # Música: letras via LRCLIB (única chamada externa do app)
     lyrics_enabled: bool = True
+    # Calendário (a opção na UI entra no Bloco 6)
+    week_start: str = "sunday"
     accent: str = DEFAULT_ACCENT
     notch_bg: str = DEFAULT_NOTCH_BG
 
@@ -108,6 +110,7 @@ _VALIDATORS: dict[str, Callable[[Any], bool]] = {
     "water_start": lambda v: _is_hhmm(v),
     "water_end": lambda v: _is_hhmm(v),
     "lyrics_enabled": lambda v: isinstance(v, bool),
+    "week_start": lambda v: v in ("sunday", "monday"),
     "accent": is_hex_color,
     "notch_bg": lambda v: v in NOTCH_BACKGROUNDS,
 }

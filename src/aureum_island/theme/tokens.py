@@ -155,6 +155,25 @@ class Pages:
     music_play_icon: int = 20
     music_volume_width: int = 96
     music_volume_handle: int = 10
+    # Calendário
+    cal_padding_x: int = 20
+    cal_padding_y: int = 8
+    cal_cell_width: int = 30
+    cal_cell_height: int = 20
+    cal_header_height: int = 24
+    cal_weekday_height: int = 16
+    cal_day_size: int = 12
+    cal_weekday_size: int = 10
+    cal_dot: int = 4
+    cal_column_gap: int = 24
+    cal_nav: int = 24
+    cal_nav_icon: int = 14
+    agenda_row_height: int = 26
+    agenda_time_width: int = 56
+    agenda_title_size: int = 13
+    agenda_tag_size: int = 10
+    agenda_tag_height: int = 16
+    agenda_tag_padding_x: int = 6
     focus_ring: int = 132
     focus_cycles: int = 4
     water_value_size: int = 38
@@ -239,6 +258,20 @@ class SettingsWindow:
     switch_width: int = 42
     switch_height: int = 24
     chip_height: int = 32
+    padding: int = 32
+    sidebar_padding: int = 16
+    nav_item_height: int = 36
+    nav_item_radius: int = 8
+    section_title_size: int = 20
+    section_title_weight: int = 600
+    body_size: int = 13
+    hint_size: int = 12
+    gap: int = 12
+    input_height: int = 34
+    input_radius: int = 8
+    color_swatch: int = 22
+    list_row_height: int = 52
+    list_dot: int = 10
 
 
 SETTINGS_WINDOW = SettingsWindow()

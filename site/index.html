@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0E0D0B">
+<!-- Only our own files, the fonts, and the GitHub API (to find the latest installer). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src https://api.github.com; base-uri 'none'; form-action 'none'">
+<title>Aureum Island: a borda da tela, viva</title>
+<meta name="description" content="Música, foco, água, tarefas e agenda num notch no topo da tela do Windows. Grátis, sem conta e sem telemetria.">
+<link rel="canonical" href="https://eduoliveira1504.github.io/aureum-island/">
+
+<meta property="og:type" content="website">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="Aureum Island">
+<meta property="og:title" content="Aureum Island: a borda da tela, viva">
+<meta property="og:description" content="Música, foco, água, tarefas e agenda num notch no topo da tela do Windows. Grátis, sem conta e sem telemetria.">
+<meta property="og:url" content="https://eduoliveira1504.github.io/aureum-island/">
+<meta property="og:image" content="https://eduoliveira1504.github.io/aureum-island/img/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Aureum Island: o notch aberto no topo da tela, tocando música.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Aureum Island: a borda da tela, viva">
+<meta name="twitter:description" content="Música, foco, água, tarefas e agenda num notch no topo da tela do Windows. Grátis, sem conta e sem telemetria.">
+<meta name="twitter:image" content="https://eduoliveira1504.github.io/aureum-island/img/og.png">
+
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&amp;family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="main.js" defer></script>
+</head>
+<body>
+<div class="hexes" aria-hidden="true"></div>
+
+<header class="top wrap">
+  <a class="brand" href="#inicio" aria-label="Aureum Island, início">
+    <svg class="mark" viewBox="0 0 96 96" aria-hidden="true"><polygon points="48,8 82.6,28 82.6,68 48,88 13.4,68 13.4,28" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M48 26 L66 70 H56 L48 50 L40 70 H30 Z" fill="currentColor"/></svg>
+    <span>AUREUM <span class="brand-sub">ISLAND</span></span>
+  </a>
+  <nav class="nav" aria-label="Seções">
+    <a href="#recursos">Recursos</a>
+    <a href="#instalar">Instalar</a>
+  </nav>
+  <a class="btn-ghost" href="#baixar">Baixar</a>
+</header>
+
+<main id="inicio">
+  <section class="hero wrap">
+    <div class="hero-copy">
+      <p class="pill">GRÁTIS · SEM CONTA · SEM TELEMETRIA</p>
+      <h1>A borda da tela,<br><span class="gold">viva.</span></h1>
+      <p class="lead">Música, foco, água, tarefas e agenda num notch no topo da tela do Windows. Ele abre quando o mouse chega, some quando você sai e fica fora do caminho no jogo e no vídeo em tela cheia.</p>
+      <div class="cta" id="baixar">
+        <a class="btn-gold" data-download href="https://github.com/eduoliveira1504/aureum-island/releases">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5l7.5-1v8H3zM11.5 3.4L21 2v9.5h-9.5zM3 12.5h7.5v8L3 19.5zM11.5 12.5H21V22l-9.5-1.4z" fill="currentColor"/></svg>
+          <span data-download-label>Baixar pra Windows</span>
+        </a>
+        <a class="link-gold" href="#recursos">Ver o que ele faz →</a>
+      </div>
+      <p class="meta" data-download-meta>Windows 10 e 11 · grátis</p>
+    </div>
+
+    <!-- The open notch on the Música page, drawn in HTML/CSS (sizes follow the app, see docs/DESIGN.md). -->
+    <div class="np" aria-hidden="true">
+      <div class="np-screen">
+        <div class="np-notch">
+          <div class="np-music">
+            <div class="np-cover">
+              <svg viewBox="0 0 96 96"><polygon points="48,8 82.6,28 82.6,68 48,88 13.4,68 13.4,28" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M48 26 L66 70 H56 L48 50 L40 70 H30 Z" fill="currentColor"/></svg>
+            </div>
+            <div class="np-info">
+              <b>Tarde de foco</b>
+              <span class="np-artist">Aureum</span>
+              <div class="np-bar"><i></i></div>
+              <div class="np-times"><span>1:24</span><span>3:29</span></div>
+              <div class="np-controls">
+                <svg viewBox="0 0 24 24"><path d="M18 6.5v11L9.5 12z" fill="currentColor"/><path d="M6.5 6v12"/></svg>
+                <span class="np-play"><svg viewBox="0 0 24 24"><path d="M8.5 6v12"/><path d="M15.5 6v12"/></svg></span>
+                <svg viewBox="0 0 24 24"><path d="M6 6.5v11l8.5-5.5z" fill="currentColor"/><path d="M17.5 6v12"/></svg>
+                <svg class="np-vol-icon" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6"/><path d="M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+                <span class="np-vol"><i></i></span>
+              </div>
+            </div>
+          </div>
+          <div class="np-pages">
+            <svg class="np-logo" viewBox="0 0 96 96"><path fill-rule="evenodd" fill="currentColor" d="M54.06 5.5 L81.78 21.5 Q87.84 25 87.84 32 L87.84 64 Q87.84 71 81.78 74.5 L54.06 90.5 Q48 94 41.94 90.5 L14.22 74.5 Q8.16 71 8.16 64 L8.16 32 Q8.16 25 14.22 21.5 L41.94 5.5 Q48 2 54.06 5.5 Z M48 20 L71 74 H60 L48 46 L36 74 H25 Z"/></svg>
+            <div class="np-icons">
+              <span class="on"><svg viewBox="0 0 24 24"><path d="M9 17.5V6.5l10-2.5v11"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></svg></span>
+              <span><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V10"/><path d="M10 3.5h4"/><path d="M18.5 6.5l1.2-1.2"/></svg></span>
+              <span><svg viewBox="0 0 24 24"><path d="M12 3.5c3.3 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.7-6.5 6-10.6z"/><path d="M9.2 14.6a2.9 2.9 0 0 0 2.4 2.6"/></svg></span>
+              <span><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M8.2 12.3l2.6 2.6 5-5.4"/></svg></span>
+              <span><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></span>
+            </div>
+            <svg class="np-gear" viewBox="0 0 24 24"><path d="M18.69 9.93 L21.07 10.44 L21.07 13.56 L18.69 14.07 L18.19 15.27 L19.51 17.31 L17.31 19.51 L15.27 18.19 L14.07 18.69 L13.56 21.07 L10.44 21.07 L9.93 18.69 L8.73 18.19 L6.69 19.51 L4.49 17.31 L5.81 15.27 L5.31 14.07 L2.93 13.56 L2.93 10.44 L5.31 9.93 L5.81 8.73 L4.49 6.69 L6.69 4.49 L8.73 5.81 L9.93 5.31 L10.44 2.93 L13.56 2.93 L14.07 5.31 L15.27 5.81 L17.31 4.49 L19.51 6.69 L18.19 8.73 Z"/><circle cx="12" cy="12" r="2.8"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap section reveal" id="recursos">
+    <p class="eyebrow">RECURSOS</p>
+    <h2>Tudo no topo da tela, sem abrir nada</h2>
+    <div class="cards">
+      <article class="card">
+        <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 17.5V6.5l10-2.5v11"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></svg></div>
+        <h3>Música</h3>
+        <p>Capa, faixa e progresso do que estiver tocando no Spotify, no navegador ou no Media Player. Pausa, pula e muda o volume dali mesmo.</p>
+        <button class="shot" type="button" data-zoom="img/musica.png" data-alt="O notch aberto na página Música, tocando uma faixa">
+          <img src="img/musica.png" alt="O notch aberto na página Música, com capa, título, progresso, controles e volume" width="2880" height="1800" loading="lazy" decoding="async">
+        </button>
+      </article>
+      <article class="card">
+        <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="13.5" r="7"/><path d="M12 13.5V10"/><path d="M10 3.5h4"/><path d="M18.5 6.5l1.2-1.2"/></svg></div>
+        <h3>Foco</h3>
+        <p>Pomodoro com ciclos de foco e pausa. O notch avisa quando é hora de parar e quando é hora de voltar.</p>
+        <button class="shot" type="button" data-zoom="img/foco.png" data-alt="O notch aberto na página Foco, com o pomodoro rodando">
+          <img src="img/foco.png" alt="O notch aberto na página Foco, com o anel de progresso, o tempo que falta e o ciclo 1 de 4" width="2880" height="1800" loading="lazy" decoding="async">
+        </button>
+      </article>
+      <article class="card">
+        <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5c3.3 4.1 6 7.4 6 10.6a6 6 0 0 1-12 0c0-3.2 2.7-6.5 6-10.6z"/><path d="M9.2 14.6a2.9 2.9 0 0 0 2.4 2.6"/></svg></div>
+        <h3>Água</h3>
+        <p>Meta do dia, um clique por copo e lembrete no intervalo que você escolher. O gráfico mostra a que horas você bebeu.</p>
+        <button class="shot" type="button" data-zoom="img/agua.png" data-alt="O notch aberto na página Água">
+          <img src="img/agua.png" alt="O notch aberto na página Água, com 1.300 de 2.000 ml, os botões de copo e o gráfico por horário" width="2880" height="1800" loading="lazy" decoding="async">
+        </button>
+      </article>
+      <article class="card">
+        <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M8.2 12.3l2.6 2.6 5-5.4"/></svg></div>
+        <h3>Tarefas</h3>
+        <p>Lista rápida com horário. Na hora, o aviso aparece no notch com <b>+10 min</b> e <b>Feito</b>.</p>
+        <button class="shot" type="button" data-zoom="img/tarefas.png" data-alt="O notch aberto na página Tarefas">
+          <img src="img/tarefas.png" alt="O notch aberto na página Tarefas, com a lista do dia e a próxima tarefa destacada" width="2880" height="1800" loading="lazy" decoding="async">
+        </button>
+      </article>
+      <article class="card">
+        <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17"/><path d="M8 3v4"/><path d="M16 3v4"/></svg></div>
+        <h3>Calendário</h3>
+        <p>O mês e a agenda de hoje juntos. Cole o link ICS do Google Agenda ou do Outlook e seus eventos aparecem ali, até os que se repetem.</p>
+        <button class="shot" type="button" data-zoom="img/calendario.png" data-alt="O notch aberto na página Calendário">
+          <img src="img/calendario.png" alt="O notch aberto na página Calendário, com o mês e a agenda de hoje misturando tarefas e eventos" width="2880" height="1800" loading="lazy" decoding="async">
+        </button>
+      </article>
+      <article class="card">
+        <div class="card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 16.5V11a5.5 5.5 0 0 1 11 0v5.5l1.5 2h-14z"/><path d="M10 20.5a2 2 0 0 0 4 0"/></svg></div>
+        <h3>Avisos</h3>
+        <p>Água, tarefa, foco e evento chegam no próprio notch, sem pular na frente do que você está fazendo. Em tela cheia, eles esperam você sair.</p>
+        <button class="shot" type="button" data-zoom="img/avisos.png" data-alt="Um aviso de água no notch">
+          <img src="img/avisos.png" alt="O aviso Hora de beber água no notch, com o botão +250 ml" width="2880" height="1800" loading="lazy" decoding="async">
+        </button>
+      </article>
+    </div>
+  </section>
+
+  <section class="wrap section reveal" id="instalar">
+    <p class="eyebrow">INSTALAR</p>
+    <h2>Três passos e ele está no topo da tela</h2>
+    <ol class="steps">
+      <li>
+        <span class="step-n">1</span>
+        <h3>Baixe o instalador</h3>
+        <p>Clique em Baixar pra Windows. O arquivo tem <span data-download-size>uns 25 MB</span>, vem direto do GitHub e não pede senha de administrador.</p>
+      </li>
+      <li>
+        <span class="step-n">2</span>
+        <h3>Libere no Windows</h3>
+        <p>O app ainda não tem assinatura digital, então o Windows avisa. É seguro: clique em <b>Mais informações</b> e depois em <b>Executar assim mesmo</b>.</p>
+        <div class="smartscreen" aria-hidden="true">
+          <div class="ss-title">O Windows protegeu o computador</div>
+          <div class="ss-text">O SmartScreen impediu que um aplicativo desconhecido fosse iniciado…</div>
+          <div class="ss-more">Mais informações</div>
+          <div class="ss-actions"><span>Executar assim mesmo</span></div>
+        </div>
+      </li>
+      <li>
+        <span class="step-n">3</span>
+        <h3>Abra e pronto</h3>
+        <p>O Aureum Island fica no topo da tela. Passe o mouse nele ou aperte <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>I</kbd> pra abrir. Na engrenagem dá pra ligar o <b>Iniciar com o Windows</b>.</p>
+      </li>
+    </ol>
+  </section>
+
+  <ul class="values wrap reveal">
+    <li>Grátis</li>
+    <li>Sem conta</li>
+    <li>Sem telemetria</li>
+    <li>Feito no Brasil</li>
+  </ul>
+
+  <section class="final wrap reveal">
+    <h2>Dá uma chance pra borda da tela.</h2>
+    <p class="lead">Grátis, sem conta e sem pegadinha. Se não curtir, desinstala em dois cliques.</p>
+    <a class="btn-gold" data-download href="https://github.com/eduoliveira1504/aureum-island/releases">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5l7.5-1v8H3zM11.5 3.4L21 2v9.5h-9.5zM3 12.5h7.5v8L3 19.5zM11.5 12.5H21V22l-9.5-1.4z" fill="currentColor"/></svg>
+      <span data-download-label>Baixar pra Windows</span>
+    </a>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <a class="brand small" href="#inicio">
+    <svg class="mark" viewBox="0 0 96 96" aria-hidden="true"><polygon points="48,8 82.6,28 82.6,68 48,88 13.4,68 13.4,28" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/><path d="M48 26 L66 70 H56 L48 50 L40 70 H30 Z" fill="currentColor"/></svg>
+    <span>AUREUM <span class="brand-sub">ISLAND</span></span>
+  </a>
+  <span class="tagline">Feito por gente, pra gente se organizar.</span>
+  <span class="foot-links">
+    <a href="https://github.com/eduoliveira1504/aureum-island">GitHub</a> ·
+    <a href="https://github.com/eduoliveira1504/aureum-island/issues/new">Reportar bug</a> ·
+    Também da Aureum: <a href="https://eduoliveira1504.github.io/aureum-voice/">Aureum Voice</a> ·
+    © 2026 Aureum
+  </span>
+</footer>
+
+<dialog class="zoom" data-zoom-dialog aria-label="Imagem ampliada">
+  <button class="zoom-close" type="button" data-zoom-close aria-label="Fechar">✕</button>
+  <img alt="" data-zoom-img>
+</dialog>
+</body>
+</html>

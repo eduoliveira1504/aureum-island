@@ -1,0 +1,297 @@
+/* Aureum Island landing page. Same tokens, fonts and patterns as the Aureum Voice page; the
+   notch preview uses the app's own palette (docs/DESIGN.md). Mobile first; every animation is
+   off with prefers-reduced-motion. */
+:root {
+  --bg: #0E0D0B;
+  --surface: #17150F;
+  --surface-2: #1E1B14;
+  --panel: #121110;
+  --line: #2A261D;
+  --line-strong: #3A352A;
+  --line-gold: #5A4413;
+  --gold: #E8B531;
+  --gold-light: #F4CF6A;
+  --gold-dark: #8A6410;
+  --gold-deep: #2A1F08;
+  --gold-glow: rgba(232, 181, 49, .25);
+  --on-gold: #1A1405;
+  --text: #F4EFE4;
+  --text-2: #D9D2C3;
+  --muted: #BDB5A4;
+  --faint: #8C8577;
+  --ok: #7FBF7A;
+  --smartscreen: #1F4E8C;
+  /* The app's notch: always the dark palette (bg-rail, bg-panel, border, text-muted). */
+  --notch: #0A0908;
+  --notch-panel: #12110D;
+  --notch-line: #2A261D;
+  --notch-muted: #A8A090;
+  --on-accent: #1A1406;
+  /* The neutral wallpaper behind the notch, the same as in the screenshots. */
+  --wall: linear-gradient(135deg, #2E3A46 0%, #5E6E78 55%, #A89780 100%);
+  --display: Sora, "Segoe UI", system-ui, sans-serif;
+  --body: Figtree, "Segoe UI", system-ui, sans-serif;
+  --gutter: 16px;
+  --hex: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='56'%20height='97'%20viewBox='0%200%2056%2097'%3E%3Cpath%20d='M28%200%20L56%2016%20L56%2048%20L28%2064%20L0%2048%20L0%2016%20Z%20M28%2064%20L28%2097'%20fill='none'%20stroke='%23E8B531'%20stroke-opacity='0.07'%20stroke-width='1'/%3E%3C/svg%3E");
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+[hidden] { display: none !important; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; }
+.gold { color: var(--gold); }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; border-radius: 6px; }
+kbd {
+  padding: 1px 6px; border-radius: 6px; background: var(--surface-2); box-shadow: 0 0 0 1px var(--line-strong);
+  font: 600 13px var(--body); color: var(--text);
+}
+
+.wrap { width: 100%; max-width: 1440px; margin: 0 auto; padding: 0 var(--gutter); }
+
+/* Background: a gold glow at the top, and hexagons moved a little by the scroll (main.js). */
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 900px;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 900px 600px at 75% 30%, rgba(232, 181, 49, .13), transparent 70%);
+}
+.hexes {
+  position: fixed;
+  inset: -120px 0;
+  z-index: -2;
+  pointer-events: none;
+  background: var(--hex);
+  will-change: transform;
+}
+
+/* --- Top bar ------------------------------------------------------------------ */
+.top { height: 72px; display: flex; align-items: center; gap: 12px; }
+.brand {
+  display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
+  color: var(--gold); font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: .24em;
+}
+.brand-sub { color: var(--text-2); font-weight: 600; }
+.brand .mark { width: 26px; height: 26px; flex: none; }
+.brand.small { font-size: 13px; letter-spacing: .2em; }
+.brand.small .mark { width: 20px; height: 20px; }
+.nav { display: none; margin-left: auto; gap: 34px; font-size: 15px; }
+.nav a { color: var(--text-2); text-decoration: none; transition: color .15s; }
+.nav a:hover { color: var(--gold); }
+.btn-ghost {
+  margin-left: auto; padding: 9px 18px; border-radius: 12px; text-decoration: none;
+  box-shadow: 0 0 0 1px var(--gold); color: var(--gold); font-weight: 700; font-size: 14px;
+  transition: background .15s, color .15s;
+}
+.btn-ghost:hover { background: var(--gold); color: var(--on-gold); }
+
+/* --- Hero --------------------------------------------------------------------- */
+.hero { display: flex; flex-direction: column; gap: 48px; padding-top: 32px; padding-bottom: 72px; }
+.pill {
+  display: inline-flex; gap: 8px; align-items: center; margin: 0; padding: 7px 14px; border-radius: 999px;
+  background: #1E1A10; box-shadow: 0 0 0 1px var(--line-gold);
+  font-size: 11px; font-weight: 700; letter-spacing: .12em; color: var(--gold);
+}
+.hero h1 { margin-top: 22px; font-size: clamp(40px, 10vw, 64px); line-height: 1.04; letter-spacing: -.02em; }
+.lead { margin: 20px 0 0; font-size: 17px; line-height: 1.6; color: var(--text-2); max-width: 540px; }
+.lead b { color: var(--text); }
+.cta { margin-top: 32px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; scroll-margin-top: 120px; }
+
+.btn-gold {
+  display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 58px; padding: 0 28px;
+  border-radius: 16px; background: var(--gold); color: var(--on-gold); text-decoration: none; text-align: center;
+  font-family: var(--display); font-weight: 700; font-size: 17px; line-height: 1.25;
+  box-shadow: 0 10px 30px var(--gold-glow), 0 0 0 0 rgba(232, 181, 49, 0);
+  transition: transform .2s ease, box-shadow .3s ease;
+  animation: glow 3.2s ease-in-out infinite;
+}
+.btn-gold svg { width: 20px; height: 20px; flex: none; }
+.btn-gold:hover { transform: scale(1.03); box-shadow: 0 12px 36px rgba(232, 181, 49, .4), 0 0 0 6px rgba(232, 181, 49, .12); }
+.btn-gold.is-mobile { font-size: 15px; padding: 0 20px; animation: none; background: var(--surface-2); color: var(--text-2); box-shadow: 0 0 0 1px var(--line-strong); cursor: default; }
+.btn-gold.is-mobile:hover { transform: none; }
+.btn-gold.is-mobile svg { color: var(--gold); }
+@keyframes glow {
+  0%, 100% { box-shadow: 0 10px 30px var(--gold-glow), 0 0 0 0 rgba(232, 181, 49, 0); }
+  50% { box-shadow: 0 10px 34px rgba(232, 181, 49, .34), 0 0 0 5px rgba(232, 181, 49, .08); }
+}
+
+.link-gold { padding: 4px 0; font: 600 16px var(--body); color: var(--gold); text-decoration: none; }
+.link-gold:hover { text-decoration: underline; text-underline-offset: 4px; }
+.meta { margin: 14px 0 0; font-size: 13px; color: var(--faint); }
+
+/* Notch preview: the open notch on the Música page, hanging from the top of a desktop.
+   Everything is sized in --u (one app pixel), so it scales with the box like the real thing. */
+.np { width: 100%; max-width: 640px; align-self: center; }
+.np-screen {
+  container-type: inline-size;
+  aspect-ratio: 16 / 9; border-radius: 16px; overflow: hidden; position: relative;
+  background: var(--wall);
+  box-shadow: 0 0 0 1px var(--line-strong), 0 40px 80px rgba(0, 0, 0, .6), 0 0 120px rgba(232, 181, 49, .12);
+}
+.np-notch {
+  --u: calc(100cqw / 680);
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: calc(620 * var(--u));
+  border-radius: 0 0 calc(30 * var(--u)) calc(30 * var(--u));
+  background: var(--notch);
+  box-shadow: 0 0 0 1px rgba(232, 181, 49, .2), 0 calc(18 * var(--u)) calc(40 * var(--u)) rgba(0, 0, 0, .45);
+  clip-path: inset(0 -60px -60px -60px); /* no outline along the top edge */
+  color: var(--text); font-family: var(--body);
+}
+.np-notch svg { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.np-music { height: calc(178 * var(--u)); display: flex; gap: calc(22 * var(--u)); padding: calc(20 * var(--u)) calc(24 * var(--u)) 0; }
+.np-cover {
+  width: calc(120 * var(--u)); height: calc(120 * var(--u)); flex: none; border-radius: calc(12 * var(--u));
+  display: grid; place-items: center; color: var(--gold);
+  background: var(--hex) center / calc(28 * var(--u)) auto, radial-gradient(circle at 50% 42%, #3A2A0A, var(--notch) 80%);
+}
+.np-cover svg { width: 46%; height: 46%; stroke: none; }
+.np-cover svg polygon { stroke: currentColor; }
+.np-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.np-info b { font: 600 calc(15 * var(--u)) / 1.3 var(--body); white-space: nowrap; }
+.np-artist { font-size: calc(13 * var(--u)); line-height: 1.3; color: var(--notch-muted); }
+.np-bar { margin-top: calc(14 * var(--u)); height: calc(4 * var(--u)); border-radius: 99px; background: var(--notch-line); overflow: hidden; }
+.np-bar i { display: block; height: 100%; width: 40%; border-radius: inherit; background: var(--gold); animation: progress 24s linear infinite; }
+@keyframes progress { from { width: 40%; } to { width: 100%; } }
+.np-times { margin-top: calc(6 * var(--u)); display: flex; justify-content: space-between; font-size: calc(11 * var(--u)); color: var(--notch-muted); font-variant-numeric: tabular-nums; }
+.np-controls { margin-top: calc(6 * var(--u)); display: flex; align-items: center; gap: calc(16 * var(--u)); color: var(--text-2); }
+.np-controls > svg { width: calc(20 * var(--u)); height: calc(20 * var(--u)); }
+.np-play { width: calc(42 * var(--u)); height: calc(42 * var(--u)); border-radius: 50%; background: var(--gold); color: var(--on-accent); display: grid; place-items: center; }
+.np-play svg { width: calc(20 * var(--u)); height: calc(20 * var(--u)); stroke-width: 2.2; }
+.np-controls .np-vol-icon { margin-left: auto; }
+.np-vol { width: calc(90 * var(--u)); height: calc(4 * var(--u)); border-radius: 99px; background: var(--notch-line); position: relative; }
+.np-vol i { position: absolute; inset: 0 15% 0 0; border-radius: inherit; background: var(--gold); }
+.np-vol i::after { content: ""; position: absolute; right: calc(-6 * var(--u)); top: 50%; width: calc(12 * var(--u)); height: calc(12 * var(--u)); border-radius: 50%; background: var(--text); transform: translateY(-50%); }
+.np-pages { height: calc(46 * var(--u)); display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 calc(16 * var(--u)); }
+.np-logo { width: calc(22 * var(--u)); height: calc(22 * var(--u)); color: var(--gold); stroke: none !important; }
+.np-icons { display: flex; gap: calc(4 * var(--u)); color: var(--notch-muted); }
+.np-icons span { width: calc(42 * var(--u)); height: calc(34 * var(--u)); display: grid; place-items: center; border-radius: calc(10 * var(--u)); }
+.np-icons span.on { color: var(--gold); box-shadow: inset 0 0 0 calc(2 * var(--u)) var(--gold); }
+.np-icons svg, .np-gear { width: calc(20 * var(--u)); height: calc(20 * var(--u)); }
+.np-gear { justify-self: end; color: var(--notch-muted); }
+
+/* --- Sections ------------------------------------------------------------------ */
+.section { padding-top: 72px; padding-bottom: 24px; scroll-margin-top: 16px; }
+.eyebrow { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .16em; color: var(--muted); }
+.section h2 { margin: 10px 0 32px; font-size: clamp(28px, 6vw, 40px); line-height: 1.15; }
+
+.cards { display: grid; grid-template-columns: 1fr; gap: 18px; }
+.card {
+  border-radius: 20px; background: var(--surface); box-shadow: 0 0 0 1px var(--line);
+  padding: 24px; display: flex; flex-direction: column; gap: 12px;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.card:hover { transform: translateY(-4px); box-shadow: 0 0 0 1px var(--gold), 0 18px 40px rgba(0, 0, 0, .35); }
+.card-icon {
+  width: 48px; height: 48px; border-radius: 14px; background: var(--gold-deep); box-shadow: 0 0 0 1px var(--line-gold);
+  display: grid; place-items: center; color: var(--gold);
+}
+.card-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+.card h3 { font-size: 20px; }
+.card p { margin: 0; font-size: 15px; color: var(--text-2); }
+.card p b { color: var(--text); }
+.shot {
+  position: relative; aspect-ratio: 16 / 7; margin-top: auto; padding: 0; border: 0; cursor: zoom-in;
+  border-radius: 12px; overflow: hidden; background: var(--bg); box-shadow: 0 0 0 1px var(--line);
+}
+/* The notch sits at the top center of the screenshot: the thumbnail zooms into it. The lightbox
+   shows the whole picture. */
+.shot img { position: absolute; top: 0; left: -15%; width: 130%; max-width: none; }
+
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr; gap: 36px; }
+.steps li { display: flex; flex-direction: column; gap: 12px; }
+.steps h3 { font-size: 19px; }
+.steps p { margin: 0; font-size: 15px; color: var(--text-2); }
+.steps b { color: var(--text); }
+.step-n {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--gold-deep); box-shadow: 0 0 0 1px var(--line-gold);
+  display: grid; place-items: center; font: 700 16px var(--display); color: var(--gold);
+}
+.smartscreen {
+  margin-top: 6px; max-width: 330px; border-radius: 12px; background: var(--smartscreen); padding: 16px 18px;
+  font-family: "Segoe UI", system-ui, sans-serif; color: #fff; font-size: 13px; line-height: 1.5;
+}
+.ss-title { font-size: 17px; margin-bottom: 6px; }
+.ss-text { opacity: .85; }
+.ss-more { margin-top: 8px; display: inline-block; padding: 1px 4px; border-radius: 4px; text-decoration: underline; box-shadow: 0 0 0 2px var(--gold); }
+.ss-actions { margin-top: 10px; display: flex; justify-content: flex-end; }
+.ss-actions span { background: #fff; color: var(--smartscreen); padding: 5px 12px; border-radius: 4px; box-shadow: 0 0 0 2px var(--gold); }
+
+.values {
+  list-style: none; margin: 64px auto 0; padding: 28px var(--gutter);
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  font: 600 16px var(--display); color: var(--text-2);
+}
+.values li::before { content: "⬢"; color: var(--gold); margin-right: 8px; }
+
+.final { padding-top: 72px; padding-bottom: 72px; text-align: center; }
+.final h2 { font-size: clamp(30px, 7vw, 44px); }
+.final .lead { margin: 12px auto 30px; }
+
+.foot {
+  padding-top: 26px; padding-bottom: calc(26px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; font-size: 13px; color: var(--faint);
+}
+.foot-links { width: 100%; }
+.foot a:not(.brand) { color: var(--muted); text-decoration: none; }
+.foot a:not(.brand):hover { color: var(--gold); }
+
+/* Lightbox for the screenshots. */
+.zoom { width: min(1440px, 94vw); max-width: none; padding: 0; border: 0; border-radius: 14px; background: var(--bg); box-shadow: 0 0 0 1px var(--line-strong), 0 30px 80px rgba(0, 0, 0, .7); }
+.zoom::backdrop { background: rgba(8, 7, 6, .82); }
+.zoom img { width: 100%; }
+.zoom-close {
+  position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer;
+  background: rgba(14, 13, 11, .8); color: var(--text); font-size: 16px; box-shadow: 0 0 0 1px var(--line-strong);
+}
+
+/* Fade + small rise as sections scroll in (only with JS, see main.js). */
+.js .reveal { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+.js .reveal.in { opacity: 1; transform: none; }
+
+/* --- Wider screens ------------------------------------------------------------- */
+@media (min-width: 640px) {
+  :root { --gutter: 32px; }
+  .cards { grid-template-columns: 1fr 1fr; }
+  .values { grid-template-columns: repeat(4, auto); justify-content: space-around; font-size: 18px; }
+  .foot-links { width: auto; margin-left: auto; }
+}
+@media (min-width: 900px) {
+  .nav { display: flex; }
+  .btn-ghost { margin-left: 34px; }
+  .top { height: 84px; }
+  .steps { grid-template-columns: repeat(3, 1fr); gap: 40px; }
+}
+@media (min-width: 1100px) {
+  :root { --gutter: 80px; }
+  .hero { flex-direction: row; align-items: center; gap: 56px; padding-top: 70px; padding-bottom: 110px; }
+  .hero-copy { flex: 1; min-width: 0; }
+  .np { width: min(640px, 50%); flex: none; }
+  .cards { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .section { padding-top: 100px; }
+  .values { margin-top: 70px; font-size: 20px; padding: 36px 0; width: calc(100% - 2 * var(--gutter)); max-width: calc(1440px - 2 * var(--gutter)); }
+  .final { padding-top: 90px; padding-bottom: 90px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .js .reveal { opacity: 1; transform: none; }
+  .card:hover, .btn-gold:hover { transform: none; }
+}

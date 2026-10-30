@@ -170,12 +170,44 @@ def test_controller_restores_last_page(controller):
 
 def test_controller_hides_on_fullscreen(qtbot, controller):
     controller.machine.open(focus=True)
+    qtbot.waitUntil(lambda: controller._anim is None, timeout=2000)
     controller.set_suppressed(True)
-    assert not controller.notch.isVisible()
     assert controller.machine.state is State.CLOSED
+    assert controller.notch.isVisible()  # recolhendo, não some de uma vez
+    qtbot.waitUntil(lambda: not controller.notch.isVisible(), timeout=2000)
+    assert not controller.shadow.isVisible()
     controller.set_suppressed(False)
     assert controller.notch.isVisible()
+    assert controller._shape.height < 34  # desce a partir de cima
+    qtbot.waitUntil(lambda: controller._anim is None, timeout=2000)
     assert controller.notch.size().toTuple() == (190, 34)
+    assert controller.notch.clock.isVisible()
+    assert controller.notch.clock.graphicsEffect() is None
+
+
+def test_animation_resizes_windows_only_at_start_and_end(qtbot, controller):
+    sizes = []
+    original = controller.notch.setGeometry
+
+    def spy(*args):
+        sizes.append(args)
+        original(*args)
+
+    controller.notch.setGeometry = spy
+    controller.machine.open(focus=True)
+    qtbot.waitUntil(lambda: controller._anim is None, timeout=2000)
+    assert len(sizes) == 2  # tamanho da animação (com folga do quique) e o final
+    assert controller.notch.size().toTuple() == (620, 224)
+
+
+def test_hover_counts_only_inside_the_shape(qtbot, controller):
+    from PySide6.QtCore import QEvent
+
+    events = []
+    controller.notch.hover_changed.connect(events.append)
+    QApplication.sendEvent(controller.notch.content, QEvent(QEvent.Type.Enter))
+    QApplication.sendEvent(controller.notch.content, QEvent(QEvent.Type.Leave))
+    assert events == [True, False]
 
 
 def test_minimal_mode_size(qtbot, theme, dispose):
@@ -240,3 +272,14 @@ def test_bar_shows_official_logo(bar, theme):
     logo = bar.findChild(Logo)
     assert logo is not None and logo.accessibleName() == "Aureum Island"
     assert not any("AUREUM" in label.text() for label in bar.findChildren(QLabel))
+
+
+def test_page_change_slides_in_briefly(qtbot, controller):
+    controller.machine.open(focus=True)
+    qtbot.waitUntil(lambda: controller._anim is None, timeout=2000)
+    view = controller.notch.open_view
+    view.bar.set_current(view.bar.current_index + 1)
+    page = view.stack.currentWidget()
+    assert view.page_animating and page.graphicsEffect() is not None
+    qtbot.waitUntil(lambda: not view.page_animating, timeout=1000)
+    assert page.graphicsEffect() is None and page.pos().x() == 0

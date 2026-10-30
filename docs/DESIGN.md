@@ -67,6 +67,13 @@ Valores exatos do `main.css` do Aureum Voice, desenhados em volta do Dourado:
 - Barra de páginas (grid 3 colunas): logo oficial da Aureum (versão sólida, 22px, em accent-text) à esquerda; ícones centrais (Música, Foco, Água, Tarefas, Calendário) 42x34, ativo em accent com traço de 2px embaixo; engrenagem à direita.
 - Abre no hover, fecha ao sair. Esconde em tela cheia (configurável). Troca de página por clique, roda do mouse ou setas.
 
+## Movimento
+- **Abrir:** mola leve, passa ~2,8% e volta (400 ms até assentar).
+- **Fechar:** 220 ms, suave nas duas pontas.
+- **Tela cheia:** recolhe para cima em 180 ms e desce de volta em 260 ms.
+- **Troca de página:** desliza 12 px com fade, em 160 ms.
+- **Ritmo:** a animação acompanha a taxa do monitor; parado, nada é redesenhado. Ver decisão 0003.
+
 ## Páginas
 - Música (largura toda, 620): capa 120px à esquerda; à direita título 15/600, artista 13, barra de progresso com tempos e, na mesma linha, controles (anterior, play 42px em accent, próxima) e volume. Sem letra (ver decisão 0008).
 - Foco: anel de progresso 132px, tempo central, "FOCO · CICLO n DE 4", 4 segmentos, botões Pausar (accent), Pular, Reiniciar.

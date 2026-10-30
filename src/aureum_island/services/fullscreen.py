@@ -203,7 +203,10 @@ if sys.platform == "win32":
                     0,
                     WINEVENT_OUTOFCONTEXT,
                 )
-            self._timer.start()
+            # Troca de janela: checa já (fora do callback). Só "mudou de tamanho/posição"
+            # espera o debounce, para não checar a cada pixel de uma janela arrastada.
+            self._timer.stop()
+            QTimer.singleShot(0, self._check)
 
         def _unhook_location(self) -> None:
             if self._loc_hook:

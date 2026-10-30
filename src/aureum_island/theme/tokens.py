@@ -152,9 +152,26 @@ NOTCH = Notch()
 class Motion:
     hover_open_delay_ms: int = 120
     hover_close_delay_ms: int = 300
-    transition_ms: int = 220
-    # Fração da transição a partir da qual o conteúdo novo aparece (fade até o fim).
-    content_fade_start: float = 0.6
+    # Abrir (e aviso entrando): mola levemente subamortecida. Passa ~2,8% do caminho e volta.
+    spring_ms: int = 400  # até assentar; o tamanho final chega em ~45% disso
+    spring_damping: float = 0.75  # ζ: 1 = sem quique; menor = mais quique
+    spring_residual: float = 0.002  # quanto falta no fim (o último quadro crava o valor)
+    # Fechar: suave nas duas pontas (cubic-bezier 0.4, 0, 0.2, 1). Uma aceleração pura
+    # "segura" no começo e parece travar antes de fechar.
+    close_ms: int = 220
+    close_curve: tuple[float, float, float, float] = (0.4, 0.0, 0.2, 1.0)
+    # Entrar (tela cheia acabou, troca de página): desaceleração "enfatizada".
+    enter_curve: tuple[float, float, float, float] = (0.05, 0.7, 0.1, 1.0)
+    # Conteúdo: frações da duração. O que sai some logo; o que entra vem junto com a forma.
+    content_out_end: float = 0.25
+    content_in_grow: tuple[float, float] = (0.12, 0.5)
+    content_in_shrink: tuple[float, float] = (0.45, 1.0)
+    # Tela cheia: o notch se recolhe para cima com fade e desce de volta ao sair.
+    fullscreen_hide_ms: int = 180
+    fullscreen_show_ms: int = 260
+    # Troca de página com o notch aberto: desliza um pouco e faz fade.
+    page_ms: int = 160
+    page_shift: int = 12
     undo_ms: int = 5000  # "Desfazer" na linha da tarefa excluída
     frame_ms: int = 16  # prévia da cor ao arrastar o seletor: no máximo 1 por frame
 

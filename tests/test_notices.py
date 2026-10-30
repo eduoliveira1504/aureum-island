@@ -162,3 +162,14 @@ def test_collapse_missed():
     assert len(merged) == 1
     assert merged[0].title == "2 avisos perdidos"
     assert merged[0].actions[0].label == "Ver"
+
+
+def test_notice_sound_is_voice_message_wav():
+    import wave
+    from importlib import resources
+
+    sounds = resources.files("aureum_island.assets.sounds")
+    assert not sounds.joinpath("chime.wav").is_file()
+    with resources.as_file(sounds.joinpath("message.wav")) as path, wave.open(str(path)) as w:
+        assert (w.getsampwidth(), w.getframerate()) == (2, 48_000)  # PCM 16-bit, 48 kHz
+        assert w.getnframes() > 0

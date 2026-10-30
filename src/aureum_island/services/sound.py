@@ -26,7 +26,7 @@ class Sound(QObject):
         if self._effect is None:
             from PySide6.QtMultimedia import QSoundEffect
 
-            path = resources.files("aureum_island.assets.sounds").joinpath("chime.wav")
+            path = resources.files("aureum_island.assets.sounds").joinpath("message.wav")
             self._effect = QSoundEffect(self)
             self._effect.setSource(QUrl.fromLocalFile(str(path)))
 

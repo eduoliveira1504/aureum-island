@@ -25,6 +25,10 @@ Tarefas, foco e, mais tarde, água e calendário precisam avisar na hora certa. 
   - um aviso por vez, 8 s, pausa com o mouse em cima ou com o aviso focado;
   - espera o notch fechar;
   - em tela cheia, espera sem som e, ao sair, junta 2 ou mais num "N avisos perdidos".
+- **Som do aviso:** `assets/sounds/message.wav`, o mesmo `message.ogg` do Aureum Voice (o som de mensagem nova).
+  - Convertido uma vez com ffmpeg para WAV PCM 16-bit, 48 kHz, mono, porque o `QSoundEffect` só toca WAV. Os metadados de título e copyright do original foram mantidos.
+  - Substitui o `chime.wav` sintetizado pelo antigo `scripts/generate_sounds.py`, que saiu.
+  - Licença: © Aureum, todos os direitos reservados (ver LICENSES.md).
 
 ## Consequences
 

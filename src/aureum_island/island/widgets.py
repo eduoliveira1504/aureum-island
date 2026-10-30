@@ -330,3 +330,34 @@ def _css(value: str) -> str:
         r, g, b = color.parse_hex(value[:7])
         return f"rgba({r}, {g}, {b}, {int(value[7:9], 16)})"
     return value
+
+
+class Logo(QWidget):
+    """Logo oficial da Aureum (assets/icons/logo*.svg) na cor accent-text do tema.
+
+    `small=True` usa a versão sólida, feita para tamanhos pequenos.
+    """
+
+    def __init__(
+        self,
+        theme: Theme,
+        size: int,
+        *,
+        small: bool = False,
+        window: bool = False,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self._theme = theme
+        self._size = size
+        self._name = "logo-small" if small else "logo"
+        self._window = window
+        self.setFixedSize(size, size)
+        self.setAccessibleName("Aureum Island")
+        self.setToolTip("Aureum Island")
+        theme.changed.connect(self.update)
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        ink = scheme(self._theme, self._window).accent_text
+        pm = icons.pixmap(self._name, ink, self._size, self.devicePixelRatioF())
+        QPainter(self).drawPixmap(0, 0, pm)

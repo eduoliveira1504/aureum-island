@@ -49,6 +49,11 @@ Valores exatos do `main.css` do Aureum Voice, desenhados em volta do Dourado:
   | selecionado e hover | bg-elevated |
   | contornos | border |
 
+## Logo
+- Logo oficial em `docs/design/brand/` (`logo.svg`, contorno; `logo-small.svg`, sólida para tamanhos pequenos).
+- O app usa cópias em `assets/icons` com a cor trocada por `currentColor`: o tema pinta em accent-text, então com o Dourado fica no dourado oficial e acompanha o accent escolhido.
+- Substitui o texto "AUREUM ISLAND" na barra do notch e na sidebar das Configurações.
+
 ## Tipografia
 - **Títulos e display:** Sora. Os títulos pequenos continuam em caixa alta, letter-spacing ~0.18em, 10–11px, cor accent-text ou text-muted.
 - **Texto:** Figtree 12–15px. Números com tabular-nums. Relógio do pomodoro 28px/600.
@@ -59,7 +64,7 @@ Valores exatos do `main.css` do Aureum Voice, desenhados em volta do Dourado:
 - Fechado: 190x34, canto inferior 18px, relógio (13px/600) + data (11px).
 - Linha mínima: 150x6, borda inferior accent 55%. Para telas com borda grossa. Hover e avisos continuam.
 - Aberto: 620 de largura, conteúdo 178 de altura + barra de páginas 46. Canto inferior 30px, borda 1px accent 20%, sem borda no topo, sombra grande.
-- Barra de páginas (grid 3 colunas): marca "AUREUM ISLAND" à esquerda; ícones centrais (Música, Foco, Água, Tarefas, Calendário) 42x34, ativo em accent com traço de 2px embaixo; engrenagem à direita.
+- Barra de páginas (grid 3 colunas): logo oficial da Aureum (versão sólida, 22px, em accent-text) à esquerda; ícones centrais (Música, Foco, Água, Tarefas, Calendário) 42x34, ativo em accent com traço de 2px embaixo; engrenagem à direita.
 - Abre no hover, fecha ao sair. Esconde em tela cheia (configurável). Troca de página por clique, roda do mouse ou setas.
 
 ## Páginas
@@ -75,7 +80,7 @@ Valores exatos do `main.css` do Aureum Voice, desenhados em volta do Dourado:
 - Duração padrão 8s, som suave opcional, opção de notificação nativa do Windows.
 
 ## Janela de Configurações
-- 1000x620, sidebar 220 + conteúdo. Seções: Geral, Calendário, Avisos, Foco e água, Aparência. Tudo se aplica na hora.
+- 1000x620, sidebar 220 + conteúdo. Logo oficial (36px, em accent-text) no topo da sidebar. Seções: Geral, Calendário, Avisos, Foco e água, Aparência. Tudo se aplica na hora.
 - **Aparência, igual à do Voice:** duas colunas. Controles à esquerda; "Prévia" (280 px) à direita, com o notch aberto em miniatura.
   - **Tema:** segmentado Escuro, Claro e Sistema, com ícones lua, sol e monitor. Com "Sistema", a dica "Segue o modo claro/escuro do Windows."
   - **Cor de destaque:**

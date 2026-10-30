@@ -201,6 +201,10 @@ def test_window_opens_on_general_with_all_sections(window):
     assert set(window.sections) == {"general", "calendar", "notices", "focus_water", "appearance"}
     labels = window.findChildren(QLabel)
     assert not any("Disponível em breve" in label.text() for label in labels)
+    assert not any("AUREUM ISLAND" in label.text() for label in labels)
+    from aureum_island.island.widgets import Logo
+
+    assert window.findChild(Logo).accessibleName() == "Aureum Island"
 
 
 def test_general_controls_write_settings(window):

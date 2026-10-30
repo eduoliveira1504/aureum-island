@@ -5,6 +5,7 @@
 | Fonte Sora | `src/aureum_island/assets/fonts/Sora[wght].ttf` (google/fonts, `ofl/sora`) | SIL Open Font License 1.1 (`Sora-OFL.txt`) |
 | Fonte Figtree | `src/aureum_island/assets/fonts/Figtree[wght].ttf` (google/fonts, `ofl/figtree`) | SIL Open Font License 1.1 (`Figtree-OFL.txt`) |
 | Ícones | `src/aureum_island/assets/icons/*.svg` | © Aureum. Desenhos próprios. |
+| Logo | `docs/design/brand/logo*.svg` e as cópias `src/aureum_island/assets/icons/logo*.svg` | © Aureum, todos os direitos reservados. Marca oficial. |
 | Sons | `src/aureum_island/assets/sounds/*.wav` | © Aureum, todos os direitos reservados. Ver abaixo. |
 
 ## Sons

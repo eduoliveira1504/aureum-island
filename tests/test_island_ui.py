@@ -230,3 +230,13 @@ def test_hotkey_candidates_order_without_duplicates():
     assert candidates("alt+ctrl+i") == ["alt+ctrl+i", "Ctrl+Alt+K", "Ctrl+Shift+Alt+I"]
     assert candidates("Ctrl+Alt+N")[0] == "Ctrl+Alt+N"
     assert len(candidates("Ctrl+Alt+N")) == 4
+
+
+def test_bar_shows_official_logo(bar, theme):
+    from PySide6.QtWidgets import QLabel
+
+    from aureum_island.island.widgets import Logo
+
+    logo = bar.findChild(Logo)
+    assert logo is not None and logo.accessibleName() == "Aureum Island"
+    assert not any("AUREUM" in label.text() for label in bar.findChildren(QLabel))

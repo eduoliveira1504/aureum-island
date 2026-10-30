@@ -163,12 +163,6 @@ class NotchPreview(QWidget):
         self._theme = theme
         self.setFixedSize(SETTINGS_WINDOW.preview_width, SETTINGS_WINDOW.preview_height)
         self.setAccessibleName("Prévia do notch")
-        self._brand = make_font(
-            TYPOGRAPHY.family_title,
-            TYPOGRAPHY.title_size_sm,
-            600,
-            letter_spacing_em=TYPOGRAPHY.title_letter_spacing_em,
-        )
         self._clock = make_font(
             TYPOGRAPHY.family_body, TYPOGRAPHY.clock_size, TYPOGRAPHY.clock_weight, tabular=True
         )
@@ -201,11 +195,9 @@ class NotchPreview(QWidget):
 
         pad = SETTINGS_WINDOW.gap + radius / 2
         inner = QRectF(x + pad, 0, w - 2 * pad, h)
-        painter.setFont(self._brand)
-        painter.setPen(qcolor(n.accent_text))
-        painter.drawText(
-            inner, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "AUREUM"
-        )
+        logo = NOTCH.brand_logo
+        pm = icons.pixmap("logo-small", n.accent_text, logo, self.devicePixelRatioF())
+        painter.drawPixmap(int(inner.left()), int((h - logo) / 2), pm)
         painter.setFont(self._clock)
         painter.setPen(qcolor(n.text))
         painter.drawText(inner, Qt.AlignmentFlag.AlignCenter, "14:32")

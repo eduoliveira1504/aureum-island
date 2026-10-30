@@ -5,21 +5,20 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from PySide6.QtCore import QRectF, Qt, Signal
-from PySide6.QtGui import QPainter, QPalette, QPen
+from PySide6.QtGui import QPainter, QPen
 from PySide6.QtWidgets import (
     QButtonGroup,
     QGridLayout,
     QHBoxLayout,
-    QLabel,
     QToolButton,
     QWidget,
 )
 
 from aureum_island.island import icons
+from aureum_island.island.widgets import Logo
 from aureum_island.pages import PageInfo
-from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import NOTCH, TYPOGRAPHY
+from aureum_island.theme.tokens import NOTCH
 
 _WHEEL_STEP = 120  # um "dente" da roda
 
@@ -107,16 +106,7 @@ class PageBar(QWidget):
         self._wheel_acc = 0
         self.setFixedHeight(NOTCH.open_bar_height)
 
-        self._brand = QLabel("AUREUM ISLAND", self)
-        self._brand.setFont(
-            make_font(
-                TYPOGRAPHY.family_title,
-                TYPOGRAPHY.title_size_sm,
-                600,
-                letter_spacing_em=TYPOGRAPHY.title_letter_spacing_em,
-            )
-        )
-        self._brand.setAccessibleName("Aureum Island")
+        self._brand = Logo(theme, NOTCH.brand_logo, small=True, parent=self)
 
         center = QWidget(self)
         row = QHBoxLayout(center)
@@ -152,8 +142,6 @@ class PageBar(QWidget):
             QWidget.setTabOrder(a, b)
 
         self.buttons[0].setChecked(True)
-        theme.changed.connect(self._apply_theme)
-        self._apply_theme()
 
     # --- página atual -------------------------------------------------------
 
@@ -198,10 +186,3 @@ class PageBar(QWidget):
             self._wheel_acc += _WHEEL_STEP * direction
             self.step(direction)
         event.accept()
-
-    # --- tema ---------------------------------------------------------------
-
-    def _apply_theme(self) -> None:
-        palette = self._brand.palette()
-        palette.setColor(QPalette.ColorRole.WindowText, qcolor(self._theme.accent_text))
-        self._brand.setPalette(palette)

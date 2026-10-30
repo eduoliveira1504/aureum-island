@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from aureum_island.island import icons, win32
+from aureum_island.island.widgets import Logo
 from aureum_island.services.autostart import Autostart
 from aureum_island.services.calendar_sync import CalendarSync
 from aureum_island.services.hotkey import GlobalHotkey
@@ -88,16 +89,7 @@ class SettingsWindow(QWidget):
         sidebar = QWidget(self)
         sidebar.setObjectName("sidebar")
         sidebar.setFixedWidth(SETTINGS_WINDOW.sidebar_width)
-        brand = QLabel("AUREUM ISLAND", sidebar)
-        brand.setObjectName("brand")
-        brand.setFont(
-            make_font(
-                TYPOGRAPHY.family_title,
-                TYPOGRAPHY.title_size_md,
-                600,
-                letter_spacing_em=TYPOGRAPHY.title_letter_spacing_em,
-            )
-        )
+        brand = Logo(theme, SETTINGS_WINDOW.brand_logo, window=True, parent=sidebar)
         self.nav = QListWidget(sidebar)
         self.nav.setObjectName("nav")
         self.nav.setAccessibleName("Seções")
@@ -181,7 +173,6 @@ class SettingsWindow(QWidget):
             f"#settings QLabel {{ color: {w.text}; }}"
             f"#sidebar {{ background: {w.rail}; }}"
             f"#content, #sectionScroll, #section {{ background: {w.panel}; }}"
-            f"#settings QLabel#brand {{ color: {w.accent_text}; }}"
             f"#settings QLabel#hint {{ color: {w.text_muted}; }}"
             f"#settings QLabel#error {{ color: {w.danger_text}; }}"
             f"#settings QLabel#label {{ color: {w.text_muted}; }}"

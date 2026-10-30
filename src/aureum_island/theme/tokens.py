@@ -131,6 +131,7 @@ class Notch:
     page_active_stroke_width: int = 18
     page_icon: int = 18
     page_button_gap: int = 4
+    brand_logo: int = 22  # logo da Aureum na barra de páginas
     bar_padding_x: int = 18
     minimal_radius: int = 3
     closed_gap: int = 8
@@ -289,6 +290,7 @@ class SettingsWindow:
     chip_height: int = 32
     padding: int = 32
     sidebar_padding: int = 16
+    brand_logo: int = 36  # logo da Aureum no topo da sidebar
     nav_item_height: int = 36
     nav_item_radius: int = 8
     section_title_size: int = 20

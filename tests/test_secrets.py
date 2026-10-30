@@ -65,3 +65,31 @@ def test_url_never_leaks_in_errors_or_logs(memory_keyring, caplog):
     assert info.value.__cause__ is None
     assert info.value.__suppress_context__
     assert URL not in caplog.text
+
+
+def test_delete_all_ics_urls_only_touches_our_links(monkeypatch):
+    # Cofre falso: o teste nunca mexe no Gerenciador de Credenciais de verdade.
+    win32ctypes = pytest.importorskip("win32ctypes.pywin32")
+    generic = 1
+
+    class FakeCred:
+        CRED_TYPE_GENERIC = generic
+
+        def __init__(self):
+            self.creds = [
+                {"Type": generic, "TargetName": "Aureum Island", "UserName": "ics:1"},
+                {"Type": generic, "TargetName": "ics:2@Aureum Island", "UserName": "ics:2"},
+                {"Type": generic, "TargetName": "Outro App", "UserName": "ics:1"},
+                {"Type": generic, "TargetName": "x@Aureum Island", "UserName": "x"},
+            ]
+
+        def CredEnumerate(self):
+            return list(self.creds)
+
+        def CredDelete(self, Type, TargetName):
+            self.creds = [c for c in self.creds if c["TargetName"] != TargetName]
+
+    fake = FakeCred()
+    monkeypatch.setattr(win32ctypes, "win32cred", fake)
+    assert secrets.delete_all_ics_urls() == 2
+    assert [c["TargetName"] for c in fake.creds] == ["Outro App", "x@Aureum Island"]

@@ -100,6 +100,44 @@ def test_autostart_command_uses_pythonw(tmp_path):
     assert command(str(exe)) == f'"{tmp_path / "pythonw.exe"}" -m aureum_island'
 
 
+def test_autostart_command_uses_installed_exe_when_frozen(tmp_path):
+    exe = tmp_path / "Aureum Island" / "AureumIsland.exe"
+    assert command(str(exe), frozen=True) == f'"{exe}"'
+
+
+def test_uninstall_cleanup_removes_only_what_was_confirmed(tmp_path):
+    from aureum_island.services.uninstall import cleanup
+
+    data = tmp_path / "Aureum Island"
+    data.mkdir()
+    (data / "settings.json").write_text("{}")
+    calls = []
+    kwargs = dict(
+        remove_autostart=lambda: calls.append("autostart"),
+        remove_secrets=lambda: calls.append("secrets"),
+        data_dir=data,
+    )
+    assert cleanup(**kwargs)  # nada confirmado: nada apagado
+    assert calls == [] and data.exists()
+    assert cleanup(autostart=True, **kwargs)
+    assert calls == ["autostart"] and data.exists()
+    assert cleanup(secrets=True, data=True, **kwargs)
+    assert calls == ["autostart", "secrets"] and not data.exists()
+    assert cleanup(data=True, **kwargs)  # já apagada: tudo bem
+
+
+def test_uninstall_cleanup_keeps_going_after_a_failure(tmp_path):
+    from aureum_island.services.uninstall import cleanup
+
+    def fail():
+        raise OSError("recusado")
+
+    data = tmp_path / "dados"
+    data.mkdir()
+    ok = cleanup(autostart=True, data=True, remove_autostart=fail, data_dir=data)
+    assert ok is False and not data.exists()
+
+
 def test_autostart_enable_disable_and_repair(settings_deps):
     reg, auto = settings_deps.registry, settings_deps.autostart
     assert auto.set_enabled(True)
@@ -141,6 +179,21 @@ def test_second_instance_notifies_first(qtbot, tmp_path):
     third = SingleInstance(lock, name)
     assert third.acquire()  # depois que a primeira sai, a próxima vira a primeira
     third.release()
+
+
+def test_single_instance_does_not_depend_on_the_lock_folder(qapp, tmp_path):
+    # O Python da Store redireciona %APPDATA%: o app instalado e o rodando pelo código
+    # veem pastas de dados diferentes e mesmo assim não podem abrir juntos.
+    if sys.platform != "win32":
+        pytest.skip("mutex nomeado só no Windows")
+    name = f"aureum-island-test-{uuid.uuid4().hex}"
+    first = SingleInstance(tmp_path / "a" / "instance.lock", name)
+    second = SingleInstance(tmp_path / "b" / "instance.lock", name)
+    try:
+        assert first.acquire()
+        assert not second.acquire()
+    finally:
+        first.release()
 
 
 # --- foco ---------------------------------------------------------------------

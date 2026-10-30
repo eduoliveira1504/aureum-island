@@ -1,7 +1,8 @@
 """Iniciar com o Windows: valor em HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run.
 
-Sem instalador e sem admin. O comando usa o pythonw.exe do mesmo Python que roda o app
-(no .venv), sem janela de console. Ver docs/decisions/0007-configuracoes.md.
+Sem admin. Instalado (PyInstaller, sys.frozen), o comando é o AureumIsland.exe. Pelo
+código, o pythonw.exe do mesmo Python que roda o app (no .venv), sem janela de console.
+Ver docs/decisions/0007-configuracoes.md e 0011-empacotamento.md.
 """
 
 from __future__ import annotations
@@ -17,9 +18,12 @@ RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
 VALUE_NAME = "Aureum Island"
 
 
-def command(executable: str | None = None) -> str:
-    """'"...\\.venv\\Scripts\\pythonw.exe" -m aureum_island'."""
+def command(executable: str | None = None, frozen: bool | None = None) -> str:
+    """'"...\\Aureum Island\\AureumIsland.exe"' instalado;
+    '"...\\.venv\\Scripts\\pythonw.exe" -m aureum_island' pelo código."""
     exe = Path(executable or sys.executable)
+    if frozen if frozen is not None else getattr(sys, "frozen", False):
+        return f'"{exe}"'
     pythonw = exe.with_name("pythonw.exe")
     if exe.name.lower() == "python.exe" and pythonw.exists():
         exe = pythonw

@@ -25,6 +25,7 @@ App de "Dynamic Island"/notch para Windows 10/11, da linha Aureum. Inspirado no 
 - Rodar: `.venv\Scripts\python -m aureum_island` (`--debug-paint` loga cada paint e cada checagem de tela cheia)
 - Testar: `.venv\Scripts\python -m pytest`
 - Lint: `.venv\Scripts\ruff check .` e `.venv\Scripts\ruff format --check .`
+- Instalador: `.venv\Scripts\python scripts\build.py` (precisa do Inno Setup 6) gera `dist\AureumIsland-Setup-<versão>.exe`. Ver docs/decisions/0011-empacotamento.md.
 - Pasta de dados: `%APPDATA%\Aureum Island`. A variável `AUREUM_ISLAND_DATA_DIR` troca a pasta (só testes e depuração).
 - Python da Microsoft Store redireciona `%APPDATA%` para `%LOCALAPPDATA%\Packages\PythonSoftwareFoundation.Python.3.13_*\LocalCache\Roaming`. Use o Python do python.org para ver os arquivos no lugar real.
 

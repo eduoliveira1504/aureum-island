@@ -21,11 +21,22 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="loga cada paintEvent e cada checagem de tela cheia",
     )
+    # Só o desinstalador usa: limpa o que o usuário confirmou e sai, sem abrir a UI.
+    parser.add_argument("--uninstall-cleanup", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--autostart", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--secrets", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument("--data", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
 
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
+    if args.uninstall_cleanup:
+        from aureum_island.services.uninstall import cleanup
+
+        ok = cleanup(autostart=args.autostart, secrets=args.secrets, data=args.data)
+        return 0 if ok else 1
+
     app = QApplication(sys.argv[:1])
     app.setApplicationName(paths.APP_NAME)
     app.setQuitOnLastWindowClosed(False)

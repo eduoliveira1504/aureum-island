@@ -1,6 +1,7 @@
 # 0007 — Configurações, tema da janela, início com o Windows e instância única
 
 > Paleta clara, contornos e tela Aparência: substituídos por [0009](0009-personalizacao-igual-ao-voice.md).
+> Comando do início automático instalado e trava da instância única: ver [0011](0011-empacotamento.md).
 
 Status: Aceita
 Date: 2026-10-29

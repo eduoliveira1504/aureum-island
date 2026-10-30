@@ -39,6 +39,32 @@ def get_ics_url(source_id: int) -> str | None:
         ) from None
 
 
+def delete_all_ics_urls() -> int:
+    """Apaga todos os links ICS do cofre, mesmo sem o banco (desinstalação). Devolve
+    quantos apagou. O keyring grava o alvo como 'Aureum Island' ou 'ics:N@Aureum Island'."""
+    from win32ctypes.pywin32 import pywintypes, win32cred
+
+    try:
+        creds = win32cred.CredEnumerate()
+    except pywintypes.error:
+        return 0  # cofre vazio
+    targets = [
+        c["TargetName"]
+        for c in creds
+        if c.get("Type") == win32cred.CRED_TYPE_GENERIC
+        and str(c.get("UserName") or "").startswith("ics:")
+        and (c["TargetName"] == SERVICE or c["TargetName"].endswith(f"@{SERVICE}"))
+    ]
+    removed = 0
+    for target in targets:
+        try:
+            win32cred.CredDelete(Type=win32cred.CRED_TYPE_GENERIC, TargetName=target)
+            removed += 1
+        except pywintypes.error:
+            pass
+    return removed
+
+
 def delete_ics_url(source_id: int) -> None:
     try:
         keyring.delete_password(SERVICE, _key(source_id))

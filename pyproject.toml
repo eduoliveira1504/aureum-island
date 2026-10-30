@@ -21,6 +21,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "pyinstaller",
     "pytest",
     "pytest-qt",
     "ruff",

@@ -29,7 +29,6 @@ from aureum_island.services.events import EventRepo, EventService
 from aureum_island.services.focus import FocusService
 from aureum_island.services.fullscreen import create_fullscreen_watcher
 from aureum_island.services.hotkey import GlobalHotkey
-from aureum_island.services.lyrics import LyricsService
 from aureum_island.services.media import create_media_service
 from aureum_island.services.reminders import Due, ReminderEngine
 from aureum_island.services.sound import Sound
@@ -103,9 +102,6 @@ class AureumIsland(QObject):
         self.calendar_sync.events_changed.connect(self.calendar_events.changed)
         self.media = create_media_service(self)
         self.volume = create_volume_service(self)
-        self.lyrics = LyricsService(
-            self.conn, enabled=lambda: self.settings.lyrics_enabled, parent=self
-        )
 
         # Páginas reais; as outras seguem provisórias.
         self.tasks_page = TasksPage(
@@ -113,7 +109,7 @@ class AureumIsland(QObject):
         )
         self.focus_page = FocusPage(self.focus, self.theme)
         self.water_page = WaterPage(self.water, self.theme)
-        self.music_page = MusicPage(self.media, self.volume, self.lyrics, self.theme)
+        self.music_page = MusicPage(self.media, self.volume, self.theme)
         self.calendar_page = CalendarPage(
             self.tasks,
             self.calendar_events,
@@ -257,8 +253,6 @@ class AureumIsland(QObject):
             )
         if any(k.startswith("water_") for k in keys):
             self.water.changed.emit()
-        if "lyrics_enabled" in keys:
-            self.music_page.reload_lyrics()
         if "week_start" in keys:
             self.calendar_page.refresh()
         if "window_theme" in keys:

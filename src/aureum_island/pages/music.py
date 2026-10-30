@@ -1,8 +1,7 @@
-"""Página Música: capa, faixa, progresso, controles, volume e letra sincronizada.
+"""Página Música: capa, faixa, progresso, controles e volume, na largura toda.
 
 Leve: tudo chega por evento (SMTC, volume). Só com a página visível e música tocando
-existe um singleShot, armado para o que vier primeiro: o próximo segundo (barra e
-tempos) ou a próxima linha da letra.
+existe um singleShot, armado para o próximo segundo (barra e tempos).
 """
 
 from __future__ import annotations
@@ -12,19 +11,10 @@ from datetime import datetime
 
 from PySide6.QtCore import QRectF, Qt, QTimer
 from PySide6.QtGui import QFontMetricsF, QImage, QPainter, QPainterPath, QPalette
-from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QLabel,
-    QScrollArea,
-    QStackedLayout,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from aureum_island.island import icons
-from aureum_island.island.widgets import IconButton, ThemedSlider, scrollbar_style
-from aureum_island.pages.lyrics_model import Lyrics, cache_key, current_index, next_change_s
-from aureum_island.services.lyrics import LyricsService
+from aureum_island.island.widgets import IconButton, ThemedSlider
 from aureum_island.services.media import MediaService, Playback, Track
 from aureum_island.services.storage.db import utc_now
 from aureum_island.services.volume import VolumeService
@@ -34,16 +24,6 @@ from aureum_island.theme.tokens import COLORS, PAGES, TYPOGRAPHY
 
 _SEEK_STEP_S = 5
 _VOLUME_STEP = 5
-
-LYRICS_MESSAGES = {
-    "loading": "Buscando a letra…",
-    "not_found": "Letra não encontrada",
-    "instrumental": "Instrumental",
-    "offline": "Sem conexão para buscar a letra",
-    "unavailable": "Letras indisponíveis no momento",
-    "disabled": "",
-    "none": "",
-}
 
 
 def format_time(seconds: float | None) -> str:
@@ -131,137 +111,11 @@ class TrackText(QWidget):
         painter.drawText(QRectF(0, y, width, afm.height()), Qt.AlignmentFlag.AlignLeft, artist)
 
 
-class _Canvas(QWidget):
-    """Área desenhada da letra sincronizada (o desenho fica no LyricsView)."""
-
-    def __init__(self, view: LyricsView) -> None:
-        super().__init__(view)
-        self._view = view
-
-    def paintEvent(self, event) -> None:  # noqa: N802
-        self._view.paint_canvas(self)
-
-
-class LyricsView(QWidget):
-    """Letra sincronizada (linha atual em accent 17/600, vizinhas em text-dim), letra
-    simples rolável ou uma mensagem."""
-
-    def __init__(self, theme: Theme, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setObjectName("lyrics")
-        self._theme = theme
-        self.lyrics: Lyrics | None = None
-        self.state = "none"
-        self.index = -1
-        self._current_font = make_font(
-            TYPOGRAPHY.family_body, PAGES.lyrics_current_size, PAGES.lyrics_current_weight
-        )
-        self._neighbor_font = make_font(TYPOGRAPHY.family_body, PAGES.lyrics_neighbor_size)
-        self.setFixedWidth(PAGES.lyrics_width)
-
-        self._painted = _Canvas(self)
-        self._plain_box = QWidget(self)
-        box = QVBoxLayout(self._plain_box)
-        box.setContentsMargins(0, 0, 0, 0)
-        box.setSpacing(PAGES.lyrics_line_gap)
-        self.plain_note = QLabel("letra não sincronizada", self._plain_box)
-        self.plain_note.setFont(make_font(TYPOGRAPHY.family_body, PAGES.music_time_size))
-        self.plain_text = QLabel(self._plain_box)
-        self.plain_text.setWordWrap(True)
-        self.plain_text.setFont(self._neighbor_font)
-        self.plain_text.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
-        self._scroll = QScrollArea(self._plain_box)
-        self._scroll.setWidgetResizable(True)
-        self._scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        self._scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self._scroll.setStyleSheet(scrollbar_style())
-        self._scroll.setWidget(self.plain_text)
-        box.addWidget(self.plain_note)
-        box.addWidget(self._scroll, 1)
-        for label, fg in ((self.plain_note, COLORS.text_dim), (self.plain_text, COLORS.text_muted)):
-            palette = label.palette()
-            palette.setColor(QPalette.ColorRole.WindowText, qcolor(fg))
-            label.setPalette(palette)
-
-        self._stack = QStackedLayout(self)
-        self._stack.addWidget(self._painted)
-        self._stack.addWidget(self._plain_box)
-        theme.changed.connect(self.update)
-
-    def set_state(self, state: str, lyrics: Lyrics | None = None) -> None:
-        self.state, self.lyrics, self.index = state, lyrics, -1
-        if state == "plain" and lyrics is not None:
-            self.plain_text.setText(lyrics.plain)
-            self._scroll.verticalScrollBar().setValue(0)
-            self._stack.setCurrentWidget(self._plain_box)
-            self.setAccessibleName("Letra não sincronizada")
-        else:
-            self._stack.setCurrentWidget(self._painted)
-            self.setAccessibleName(LYRICS_MESSAGES.get(state, "") or "Letra")
-        self._painted.update()
-
-    def set_position(self, position_s: float) -> None:
-        if self.state != "synced" or self.lyrics is None:
-            return
-        index = current_index(self.lyrics, position_s)
-        if index != self.index:
-            self.index = index
-            if 0 <= index < len(self.lyrics.lines):
-                self.setAccessibleName(self.lyrics.lines[index].text or "Letra")
-            self._painted.update()
-
-    def paint_canvas(self, canvas: QWidget) -> None:
-        painter = QPainter(canvas)
-        painter.setRenderHint(QPainter.RenderHint.TextAntialiasing)
-        width, height = self._painted.width(), self._painted.height()
-        if self.state != "synced" or self.lyrics is None:
-            message = LYRICS_MESSAGES.get(self.state, "")
-            if message:
-                painter.setFont(self._neighbor_font)
-                painter.setPen(qcolor(COLORS.text_dim))
-                painter.drawText(self._painted.rect(), Qt.AlignmentFlag.AlignCenter, message)
-            return
-        lines = self.lyrics.lines
-        cur_fm, nb_fm = QFontMetricsF(self._current_font), QFontMetricsF(self._neighbor_font)
-        gap = PAGES.lyrics_line_gap
-        flags = Qt.AlignmentFlag.AlignLeft | Qt.TextFlag.TextWordWrap
-        # Linha atual um pouco acima do meio; anteriores para cima, próximas para baixo.
-        current = self.index
-        center_y = height * 0.42
-        cur_text = lines[current].text if 0 <= current < len(lines) else "♪"
-        cur_rect = cur_fm.boundingRect(QRectF(0, 0, width, height), flags, cur_text or "♪")
-        top = center_y - cur_rect.height() / 2
-        painter.setFont(self._current_font)
-        painter.setPen(qcolor(self._theme.accent_text))
-        painter.drawText(QRectF(0, top, width, cur_rect.height()), flags, cur_text or "♪")
-
-        painter.setFont(self._neighbor_font)
-        painter.setPen(qcolor(COLORS.text_dim))
-        y = top - gap
-        for i in range(current - 1, -1, -1):
-            text = lines[i].text or "♪"
-            rect = nb_fm.boundingRect(QRectF(0, 0, width, height), flags, text)
-            y -= rect.height()
-            if y + rect.height() < 0:
-                break
-            painter.drawText(QRectF(0, y, width, rect.height()), flags, text)
-            y -= gap
-        y = top + cur_rect.height() + gap
-        for i in range(current + 1, len(lines)):
-            text = lines[i].text or "♪"
-            rect = nb_fm.boundingRect(QRectF(0, 0, width, height), flags, text)
-            if y > height:
-                break
-            painter.drawText(QRectF(0, y, width, rect.height()), flags, text)
-            y += rect.height() + gap
-
-
 class MusicPage(QWidget):
     def __init__(
         self,
         media: MediaService,
         volume: VolumeService,
-        lyrics: LyricsService,
         theme: Theme,
         *,
         now: Callable[[], datetime] = utc_now,
@@ -272,10 +126,8 @@ class MusicPage(QWidget):
         self.setAccessibleName("Música")
         self._media = media
         self._volume = volume
-        self._lyrics = lyrics
         self._theme = theme
         self._now = now
-        self._lyrics_key: str | None = None
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._tick)
@@ -332,14 +184,7 @@ class MusicPage(QWidget):
         self.mute.clicked.connect(lambda: volume.set_muted(not volume.muted))
         self.volume_slider.valueChanged.connect(self._on_volume_slider)
 
-        self.lyrics_view = LyricsView(theme, self)
-
-        # Layout
-        header = QHBoxLayout()
-        header.setSpacing(PAGES.music_gap)
-        header.addWidget(self.cover)
-        header.addWidget(self.text, 1, Qt.AlignmentFlag.AlignVCenter)
-
+        # Layout: capa à esquerda; faixa, progresso e controles + volume à direita.
         times = QHBoxLayout()
         times.setContentsMargins(0, 0, 0, 0)
         times.addWidget(self.elapsed)
@@ -354,22 +199,22 @@ class MusicPage(QWidget):
         controls.addWidget(self.mute, 0, Qt.AlignmentFlag.AlignVCenter)
         controls.addWidget(self.volume_slider, 0, Qt.AlignmentFlag.AlignVCenter)
 
-        left = QVBoxLayout()
-        left.setSpacing(0)
-        left.addStretch(1)
-        left.addLayout(header)
-        left.addSpacing(PAGES.music_gap)
-        left.addWidget(self.progress)
-        left.addLayout(times)
-        left.addSpacing(PAGES.button_gap)
-        left.addLayout(controls)
-        left.addStretch(1)
+        right = QVBoxLayout()
+        right.setSpacing(0)
+        right.addStretch(1)
+        right.addWidget(self.text)
+        right.addSpacing(PAGES.music_gap)
+        right.addWidget(self.progress)
+        right.addLayout(times)
+        right.addSpacing(PAGES.button_gap)
+        right.addLayout(controls)
+        right.addStretch(1)
 
         row = QHBoxLayout(self)
         row.setContentsMargins(PAGES.music_padding_x, 0, PAGES.music_padding_x, 0)
-        row.setSpacing(PAGES.focus_column_gap)
-        row.addLayout(left, 1)
-        row.addWidget(self.lyrics_view)
+        row.setSpacing(PAGES.music_column_gap)
+        row.addWidget(self.cover, 0, Qt.AlignmentFlag.AlignVCenter)
+        row.addLayout(right, 1)
 
         for a, b in zip(
             (self.prev, self.play, self.next, self.progress, self.mute),
@@ -382,7 +227,6 @@ class MusicPage(QWidget):
         media.playback_changed.connect(self._on_playback)
         media.cover_changed.connect(self.cover.set_cover)
         volume.changed.connect(self._on_volume)
-        lyrics.ready.connect(self._on_lyrics)
         theme.changed.connect(self._apply_theme)
         self._apply_theme()
         self._on_track(media.track)
@@ -408,27 +252,8 @@ class MusicPage(QWidget):
     def _on_track(self, track: Track | None) -> None:
         if track is None:
             self.text.set_text("Nada tocando agora", "Abra um player de música ou vídeo")
-            self._lyrics_key = None
-            self.lyrics_view.set_state("none")
             return
         self.text.set_text(track.title, track.artist or track.album)
-        key = cache_key(track.artist, track.title, track.album)
-        if key == self._lyrics_key:
-            return  # mesma faixa (ex.: só a duração chegou): não busca de novo
-        self._lyrics_key = key
-        self.lyrics_view.set_state("loading")
-        self._lyrics.request(track.artist, track.title, track.album, track.duration_s)
-
-    def reload_lyrics(self) -> None:
-        """Letras ligadas ou desligadas nas Configurações: refaz o pedido da faixa atual."""
-        self._lyrics_key = None
-        self._on_track(self._media.track)
-
-    def _on_lyrics(self, key: str, lyrics: Lyrics) -> None:
-        if key != self._lyrics_key:
-            return  # resposta de uma faixa anterior
-        self.lyrics_view.set_state(lyrics.status, lyrics)
-        self._refresh_position()
 
     # --- playback -----------------------------------------------------------
 
@@ -457,20 +282,14 @@ class MusicPage(QWidget):
         self.progress.setAccessibleDescription(
             f"{spoken_time(position)} de {spoken_time(playback.duration_s)}"
         )
-        self.lyrics_view.set_position(position)
         self._arm(position, playback)
 
     def _arm(self, position: float, playback: Playback) -> None:
-        """Só com a página visível e tocando: próximo segundo ou próxima linha."""
+        """Só com a página visível e tocando: o próximo segundo."""
         if not (self.isVisible() and playback.playing and self._media.track is not None):
             self._timer.stop()
             return
         delay = 1.0 - (position % 1.0)
-        lyrics = self.lyrics_view.lyrics
-        if self.lyrics_view.state == "synced" and lyrics is not None:
-            change = next_change_s(lyrics, position)
-            if change is not None:
-                delay = min(delay, change)
         self._timer.start(max(20, int(delay * 1000) + 10))
 
     def _tick(self) -> None:

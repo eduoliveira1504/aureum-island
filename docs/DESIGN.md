@@ -27,7 +27,7 @@ Visual: preto quente + dourado Aureum. Notch sempre escuro.
 - Abre no hover, fecha ao sair. Esconde em tela cheia (configurável). Troca de página por clique, roda do mouse ou setas.
 
 ## Páginas
-- Música: capa 72px, título 15/600, artista 13, barra de progresso com tempos, controles (anterior, play 42px em accent, próxima), volume. Letra à direita: linha atual em accent 17/600, vizinhas em text-dim.
+- Música (largura toda, 620): capa 120px à esquerda; à direita título 15/600, artista 13, barra de progresso com tempos e, na mesma linha, controles (anterior, play 42px em accent, próxima) e volume. Sem letra (ver decisão 0008).
 - Foco: anel de progresso 132px, tempo central, "FOCO · CICLO n DE 4", 4 segmentos, botões Pausar (accent), Pular, Reiniciar.
 - Água: valor grande (38px) / meta, "faltam X ml", 8 segmentos (cada um 1/8 da meta), botões "+copo ml" (accent) e "+2×copo ml" (copo padrão 250 ml), mini gráfico por horário da janela ativa (hora atual em accent).
 - Tarefas: lista com checkbox 20px, horário à direita (pill accent para a próxima), campo "Nova tarefa" + horário + botão adicionar.

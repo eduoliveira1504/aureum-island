@@ -263,8 +263,6 @@ def test_general_controls_write_settings(window):
     assert store.value.hide_on_fullscreen is False
     g.week.chips[1].click()
     assert store.value.week_start == "monday"
-    g.lyrics_switch.click()
-    assert store.value.lyrics_enabled is False
     g.autostart_switch.click()
     assert store.value.autostart is True
     assert VALUE_NAME in window.deps.registry.values

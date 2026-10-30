@@ -1,4 +1,4 @@
-"""Seção Geral: início com o Windows, modo do notch, tela cheia, atalho, semana, letras."""
+"""Seção Geral: início com o Windows, modo do notch, tela cheia, atalho e semana."""
 
 from __future__ import annotations
 
@@ -103,9 +103,6 @@ class GeneralSection(QWidget):
         )
         self.week.selected.connect(lambda v: store.update(week_start=v))
 
-        self.lyrics_switch = Switch(theme, "Letras das músicas", self)
-        self.lyrics_switch.clicked.connect(lambda on: store.update(lyrics_enabled=on))
-
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(SETTINGS_WINDOW.gap)
@@ -141,14 +138,6 @@ class GeneralSection(QWidget):
         layout.addWidget(self.hotkey_status)
         layout.addWidget(self.hotkey_error)
         layout.addWidget(SettingRow("Início da semana", self.week, self))
-        layout.addWidget(
-            SettingRow(
-                "Letras das músicas",
-                self.lyrics_switch,
-                self,
-                hint_text="Busca a letra no LRCLIB (lrclib.net) quando a faixa muda.",
-            )
-        )
         layout.addStretch(1)
 
         store.changed.connect(lambda _keys: self.load())
@@ -161,7 +150,6 @@ class GeneralSection(QWidget):
         self.mode.set_value(s.mode)
         self.fullscreen_switch.setChecked(s.hide_on_fullscreen)
         self.week.set_value(s.week_start)
-        self.lyrics_switch.setChecked(s.lyrics_enabled)
         self._show_hotkey()
 
     def _show_hotkey(self) -> None:

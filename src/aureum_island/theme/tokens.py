@@ -187,20 +187,16 @@ MOTION = Motion()
 
 @dataclass(frozen=True)
 class Pages:
-    music_cover: int = 72
+    music_cover: int = 120
     music_title_size: int = 15
     music_title_weight: int = 600
     music_artist_size: int = 13
     music_play_button: int = 42
-    lyrics_current_size: int = 17
-    lyrics_current_weight: int = 600
-    lyrics_neighbor_size: int = 13
-    lyrics_line_gap: int = 8
-    lyrics_width: int = 250
     music_padding_x: int = 24
+    music_column_gap: int = 20
     music_gap: int = 12
     music_cover_radius: int = 8
-    music_cover_icon: int = 28
+    music_cover_icon: int = 40
     music_title_gap: int = 2
     music_progress_height: int = 4
     music_progress_hit: int = 14

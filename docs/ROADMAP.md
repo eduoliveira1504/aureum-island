@@ -8,7 +8,7 @@
 | 1 | Janela do notch: estados fechado / linha mínima / aberto, animação, barra de páginas, atalho global, esconder em tela cheia, tray. |
 | 2 | Foco (pomodoro), tarefas e motor de avisos. |
 | 3 | Água: meta, registro, avisos e mini gráfico. |
-| 4 | Música: SMTC (winrt-*), volume (pycaw), letras (LRCLIB). |
+| 4 | Música: SMTC (winrt-*) e volume (pycaw). Letras removidas depois (decisão 0008). |
 | 5 | Calendário: eventos locais + links ICS (incluindo recorrentes). |
 | 6 | Janela de Configurações: Geral, Calendário, Avisos, Foco e água, Aparência. |
 

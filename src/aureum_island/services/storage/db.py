@@ -84,6 +84,11 @@ MIGRATIONS: list[str] = [
     ALTER TABLE ics_sources ADD COLUMN last_attempt_at TEXT;
     ALTER TABLE ics_sources ADD COLUMN last_status TEXT;
     """,
+    # 5: sem letras (ver 0008): o cache da migração 3 sai
+    """
+    DROP INDEX IF EXISTS lyrics_cache_lru;
+    DROP TABLE IF EXISTS lyrics_cache;
+    """,
 ]
 
 

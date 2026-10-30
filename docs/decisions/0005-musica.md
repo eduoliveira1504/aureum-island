@@ -1,5 +1,7 @@
 # 0005 — Música: SMTC, volume e letras
 
+> Letra: substituída por [0008](0008-sem-letra.md).
+
 Status: Aceita
 Date: 2026-10-29
 

@@ -59,8 +59,6 @@ class Settings:
     water_interval_min: int = 60
     water_start: str = "08:00"
     water_end: str = "22:00"
-    # Música: letras via LRCLIB (única chamada externa do app)
-    lyrics_enabled: bool = True
     # Calendário
     week_start: str = "sunday"
     # Aparência. O tema vale só para a janela de Configurações; o notch é sempre escuro.
@@ -114,7 +112,6 @@ _VALIDATORS: dict[str, Callable[[Any], bool]] = {
     "water_interval_min": lambda v: v in WATER_INTERVALS and not isinstance(v, bool),
     "water_start": lambda v: _is_hhmm(v),
     "water_end": lambda v: _is_hhmm(v),
-    "lyrics_enabled": lambda v: isinstance(v, bool),
     "week_start": lambda v: v in ("sunday", "monday"),
     "window_theme": lambda v: v in WINDOW_THEMES,
     "accent": is_hex_color,

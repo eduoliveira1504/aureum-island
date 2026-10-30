@@ -417,3 +417,10 @@ def test_local_event_already_started_has_no_reminder(env):
     soon = env.events.add_local("Daqui a 5 min", NOW + timedelta(minutes=5))
     engine.check()
     assert [[d.item_id for d in batch] for batch in fired] == [[soon.id]]
+
+
+def test_ics_user_agent():
+    from aureum_island.services.calendar_sync import user_agent
+
+    assert user_agent().startswith("AureumIsland/")
+    assert user_agent().endswith("(https://github.com/eduoliveira1504/aureum-island)")

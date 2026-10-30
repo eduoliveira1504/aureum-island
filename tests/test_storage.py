@@ -40,6 +40,29 @@ def test_migration_is_idempotent(tmp_path):
     conn.close()
 
 
+def test_lyrics_cache_dropped_on_upgrade(tmp_path, monkeypatch):
+    path = tmp_path / "data.db"
+    monkeypatch.setattr(db, "MIGRATIONS", db.MIGRATIONS[:4])  # banco do Bloco 5
+    old = db.connect(path)
+    old.execute("INSERT INTO lyrics_cache VALUES ('k', 'plain', 'oi', 2, 'x', 'x')")
+    old.commit()
+    old.close()
+    monkeypatch.undo()
+    conn = db.connect(path)
+    names = {r[0] for r in conn.execute("SELECT name FROM sqlite_master")}
+    assert "lyrics_cache" not in names and "lyrics_cache_lru" not in names
+    assert db.schema_version(conn) == 5
+    conn.close()
+
+
+def test_old_lyrics_setting_is_ignored(tmp_path):
+    path = tmp_path / "settings.json"
+    path.write_text(json.dumps({"lyrics_enabled": False, "mode": "minimal"}), encoding="utf-8")
+    loaded = settings.load(path)
+    assert loaded.mode == "minimal"
+    assert "lyrics_enabled" not in settings.to_dict(loaded)
+
+
 def test_failed_migration_rolls_back(tmp_path, monkeypatch):
     path = tmp_path / "data.db"
     db.connect(path).close()

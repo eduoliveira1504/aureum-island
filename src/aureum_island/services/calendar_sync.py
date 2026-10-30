@@ -14,6 +14,7 @@ import sqlite3
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from importlib import metadata
 from typing import Protocol
 
 from PySide6.QtCore import QObject, QTimer, QUrl, Signal
@@ -24,6 +25,8 @@ from aureum_island.services.storage import secrets
 from aureum_island.services.storage.db import from_db, to_db, utc_now
 
 log = logging.getLogger(__name__)
+
+HOMEPAGE = "https://github.com/eduoliveira1504/aureum-island"
 
 SYNC_EVERY = timedelta(minutes=30)
 TIMEOUT_MS = 15_000
@@ -60,13 +63,19 @@ class IcsFetcher(Protocol):
     ) -> None: ...
 
 
+def user_agent() -> str:
+    try:
+        version = metadata.version("aureum-island")
+    except metadata.PackageNotFoundError:
+        version = "0.0.0"
+    return f"AureumIsland/{version} ({HOMEPAGE})"
+
+
 class QtIcsFetcher:
     """GET com timeout e limite de tamanho, no loop do Qt."""
 
     def __init__(self, parent: QObject) -> None:
         from PySide6.QtNetwork import QNetworkAccessManager
-
-        from aureum_island.services.lyrics import user_agent
 
         self._nam = QNetworkAccessManager(parent)
         self._nam.setTransferTimeout(TIMEOUT_MS)

@@ -290,7 +290,17 @@ class SettingsWindow:
     chip_height: int = 32
     padding: int = 32
     sidebar_padding: int = 16
-    brand_logo: int = 36  # logo da Aureum no topo da sidebar
+    # Barra própria (igual à do Voice: h-12, logo 30, nome 15/600 em Sora)
+    title_bar_height: int = 48
+    title_padding_x: int = 12
+    title_logo: int = 30
+    title_logo_gap: int = 8
+    title_text_size: int = 15
+    title_text_weight: int = 600
+    title_text_letter_spacing_em: float = -0.01  # tracking-tight
+    window_button_width: int = 46  # botões de janela do Windows
+    window_glyph: int = 10
+    resize_border: int = 6  # faixa das bordas que redimensiona
     nav_item_height: int = 36
     nav_item_radius: int = 8
     section_title_size: int = 20

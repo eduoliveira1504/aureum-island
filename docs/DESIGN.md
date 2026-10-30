@@ -52,7 +52,7 @@ Valores exatos do `main.css` do Aureum Voice, desenhados em volta do Dourado:
 ## Logo
 - Logo oficial em `docs/design/brand/` (`logo.svg`, contorno; `logo-small.svg`, sólida para tamanhos pequenos).
 - O app usa cópias em `assets/icons` com a cor trocada por `currentColor`: o tema pinta em accent-text, então com o Dourado fica no dourado oficial e acompanha o accent escolhido.
-- Substitui o texto "AUREUM ISLAND" na barra do notch e na sidebar das Configurações.
+- Substitui o texto "AUREUM ISLAND" na barra do notch; nas Configurações fica na barra própria da janela.
 
 ## Tipografia
 - **Títulos e display:** Sora. Os títulos pequenos continuam em caixa alta, letter-spacing ~0.18em, 10–11px, cor accent-text ou text-muted.
@@ -80,7 +80,11 @@ Valores exatos do `main.css` do Aureum Voice, desenhados em volta do Dourado:
 - Duração padrão 8s, som suave opcional, opção de notificação nativa do Windows.
 
 ## Janela de Configurações
-- 1000x620, sidebar 220 + conteúdo. Logo oficial (36px, em accent-text) no topo da sidebar. Seções: Geral, Calendário, Avisos, Foco e água, Aparência. Tudo se aplica na hora.
+- 1000x620, sidebar 220 + conteúdo.
+- **Barra própria, igual à do Voice (sem a barra do Windows):**
+  - 48px, fundo bg-rail;
+  - logo oficial de 30px em accent-text + "Aureum Island" em Sora 15/600;
+  - à direita, minimizar, maximizar/restaurar e fechar (46x48, desenho do Windows, traço de 1px em text); hover em bg-elevated, e o fechar em danger com tinta on-danger. Seções: Geral, Calendário, Avisos, Foco e água, Aparência. Tudo se aplica na hora.
 - **Aparência, igual à do Voice:** duas colunas. Controles à esquerda; "Prévia" (280 px) à direita, com o notch aberto em miniatura.
   - **Tema:** segmentado Escuro, Claro e Sistema, com ícones lua, sol e monitor. Com "Sistema", a dica "Segue o modo claro/escuro do Windows."
   - **Cor de destaque:**

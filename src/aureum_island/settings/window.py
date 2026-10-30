@@ -6,7 +6,7 @@ sem botão Salvar. Cores do esquema da janela (theme.window: Escuro, Claro ou Si
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QEvent, Qt
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
 )
 
 from aureum_island.island import icons, win32
-from aureum_island.island.widgets import Logo
 from aureum_island.services.autostart import Autostart
 from aureum_island.services.calendar_sync import CalendarSync
 from aureum_island.services.hotkey import GlobalHotkey
@@ -31,6 +30,7 @@ from aureum_island.settings.focus_water_section import FocusWaterSection
 from aureum_island.settings.general_section import GeneralSection
 from aureum_island.settings.notices_section import NoticesSection
 from aureum_island.settings.store import SettingsStore
+from aureum_island.settings.title_bar import TitleBar
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme
 from aureum_island.theme.tokens import NOTCH, PAGES, SETTINGS_WINDOW, TYPOGRAPHY
@@ -77,7 +77,8 @@ class SettingsWindow(QWidget):
         sound: Sound,
         parent: QWidget | None = None,
     ) -> None:
-        super().__init__(parent, Qt.WindowType.Window)
+        # Sem a barra do Windows: a barra é a do app (title_bar.py; win32 cuida do resto).
+        super().__init__(parent, Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
         self.setObjectName("settings")
         self.setWindowTitle("Configurações · Aureum Island")
         self.setAccessibleName("Configurações")
@@ -85,11 +86,12 @@ class SettingsWindow(QWidget):
         self.resize(SETTINGS_WINDOW.width, SETTINGS_WINDOW.height)
         self.setMinimumSize(SETTINGS_WINDOW.width, SETTINGS_WINDOW.height)
         self._theme = theme
+        self._frame_ready = False
+        self.title_bar = TitleBar(theme, self)
 
         sidebar = QWidget(self)
         sidebar.setObjectName("sidebar")
         sidebar.setFixedWidth(SETTINGS_WINDOW.sidebar_width)
-        brand = Logo(theme, SETTINGS_WINDOW.brand_logo, window=True, parent=sidebar)
         self.nav = QListWidget(sidebar)
         self.nav.setObjectName("nav")
         self.nav.setAccessibleName("Seções")
@@ -98,7 +100,6 @@ class SettingsWindow(QWidget):
         pad = SETTINGS_WINDOW.sidebar_padding
         side.setContentsMargins(pad, SETTINGS_WINDOW.padding, pad, pad)
         side.setSpacing(SETTINGS_WINDOW.padding)
-        side.addWidget(brand)
         side.addWidget(self.nav, 1)
 
         self.stack = QStackedWidget(self)
@@ -134,11 +135,16 @@ class SettingsWindow(QWidget):
         inner.setContentsMargins(p, p, p // 2, p)
         inner.addWidget(self.stack)
 
-        row = QHBoxLayout(self)
+        row = QHBoxLayout()
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(0)
         row.addWidget(sidebar)
         row.addWidget(content, 1)
+        column = QVBoxLayout(self)
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(0)
+        column.addWidget(self.title_bar)
+        column.addLayout(row, 1)
 
         theme.changed.connect(self._apply_theme)
         self._apply_theme()
@@ -155,11 +161,28 @@ class SettingsWindow(QWidget):
         if key in keys:
             self.nav.setCurrentRow(keys.index(key))
 
+    def showEvent(self, event) -> None:  # noqa: N802
+        if not self._frame_ready:
+            win32.enable_custom_frame(self)  # sombra, cantos, encaixe e bordas nativas
+            self._frame_ready = True
+        super().showEvent(event)
+
+    def changeEvent(self, event) -> None:  # noqa: N802
+        if event.type() == QEvent.Type.WindowStateChange:
+            self.title_bar.sync_state()
+        super().changeEvent(event)
+
+    def nativeEvent(self, event_type, message):  # noqa: N802
+        if self._frame_ready and win32.native():
+            handled = win32.custom_frame_event(message, SETTINGS_WINDOW.resize_border)
+            if handled is not None:
+                return handled
+        return super().nativeEvent(event_type, message)
+
     def open(self, section: str | None = None) -> None:
         if section:
             self.show_section(section)
         self.show()
-        win32.set_dark_title_bar(self, self._theme.window.name == "dark")
         self.setWindowState(self.windowState() & ~Qt.WindowState.WindowMinimized)
         self.raise_()
         self.activateWindow()
@@ -171,7 +194,7 @@ class SettingsWindow(QWidget):
         self.setStyleSheet(
             f"#settings {{ background: {w.panel}; }}"
             f"#settings QLabel {{ color: {w.text}; }}"
-            f"#sidebar {{ background: {w.rail}; }}"
+            f"#sidebar, #titleBar {{ background: {w.rail}; }}"
             f"#content, #sectionScroll, #section {{ background: {w.panel}; }}"
             f"#settings QLabel#hint {{ color: {w.text_muted}; }}"
             f"#settings QLabel#error {{ color: {w.danger_text}; }}"
@@ -192,5 +215,3 @@ class SettingsWindow(QWidget):
             f"#settings QToolTip {{ background: {w.elevated}; color: {w.text};"
             f" border: 1px solid {w.border}; }}"
         )
-        if self.isVisible():
-            win32.set_dark_title_bar(self, w.name == "dark")

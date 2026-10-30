@@ -362,3 +362,23 @@ def test_color_dialog_previews_then_saves_or_reverts(window, qtbot):
     a.dialog.accept()
     assert store.value.accent == "#4F8CC9"
     assert theme.notch.rail != rail  # salvou e re-tingiu
+
+
+def test_window_has_own_title_bar(window, qtbot):
+    from aureum_island.island.widgets import Logo
+
+    assert window.windowFlags() & Qt.WindowType.FramelessWindowHint
+    bar = window.title_bar
+    assert bar.findChild(Logo) is not None
+    assert bar.title.text() == "Aureum Island"
+    names = [b.accessibleName() for b in (bar.minimize, bar.maximize, bar.close_button)]
+    assert names == ["Minimizar", "Maximizar", "Fechar"]
+    window.show()
+    bar.maximize.click()
+    qtbot.waitUntil(window.isMaximized)
+    assert bar.maximize.accessibleName() == "Restaurar"
+    bar.maximize.click()
+    qtbot.waitUntil(lambda: not window.isMaximized())
+    assert bar.maximize.accessibleName() == "Maximizar"
+    bar.close_button.click()
+    assert not window.isVisible()

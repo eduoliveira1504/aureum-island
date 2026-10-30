@@ -64,3 +64,23 @@ def place_below(lower: QWidget, upper: QWidget) -> None:
     _user32.SetWindowPos(
         _hwnd(lower), _hwnd(upper), 0, 0, 0, 0, _SWP_NOMOVE | _SWP_NOSIZE | _SWP_NOACTIVATE
     )
+
+
+_DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+
+
+def set_dark_title_bar(widget: QWidget, dark: bool) -> None:
+    """Barra de título escura ou clara (Windows 10 20H1+ e 11), seguindo o tema da janela."""
+    if not native():
+        return
+    try:
+        dwmapi = ctypes.WinDLL("dwmapi")
+    except OSError:
+        return
+    value = ctypes.c_int(1 if dark else 0)
+    dwmapi.DwmSetWindowAttribute(
+        wintypes.HWND(_hwnd(widget)),
+        _DWMWA_USE_IMMERSIVE_DARK_MODE,
+        ctypes.byref(value),
+        ctypes.sizeof(value),
+    )

@@ -9,6 +9,7 @@ import sys
 from PySide6.QtWidgets import QApplication
 
 from aureum_island.island import debug
+from aureum_island.services.single_instance import SingleInstance
 from aureum_island.services.storage import paths
 from aureum_island.theme.fonts import register_fonts
 
@@ -28,6 +29,14 @@ def main(argv: list[str] | None = None) -> int:
     app = QApplication(sys.argv[:1])
     app.setApplicationName(paths.APP_NAME)
     app.setQuitOnLastWindowClosed(False)
+
+    instance = SingleInstance(paths.data_dir() / "instance.lock")
+    if not instance.acquire():
+        # Já existe um Aureum Island rodando: ele abre o notch e esta sai.
+        if not instance.notify():
+            logging.getLogger(__name__).warning("instância única: a outra não respondeu")
+        return 0
+
     register_fonts()
     if args.debug_paint:
         debug.enable(app)
@@ -36,8 +45,12 @@ def main(argv: list[str] | None = None) -> int:
     from aureum_island.app import AureumIsland
 
     island = AureumIsland(app, debug_paint=args.debug_paint)
+    instance.activated.connect(island.controller.open)
     island.start()
-    return app.exec()
+    try:
+        return app.exec()
+    finally:
+        instance.release()
 
 
 if __name__ == "__main__":

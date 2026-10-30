@@ -39,9 +39,17 @@ Visual: preto quente + dourado Aureum. Notch sempre escuro.
 - Duração padrão 8s, som suave opcional, opção de notificação nativa do Windows.
 
 ## Janela de Configurações
-- 1000x620, sidebar 220 + conteúdo. Seções: Geral, Calendário, Avisos, Foco e água, Aparência.
-- Aparência: Tema (Escuro/Claro/Sistema), Cor de destaque (bolinhas 40px com anel no selecionado), código hex, fundo do notch, prévia.
-- Switches 42x24, chips de opção 32px de altura.
+- 1000x620, sidebar 220 + conteúdo. Seções: Geral, Calendário, Avisos, Foco e água, Aparência. Tudo se aplica na hora.
+- Aparência: Tema (Escuro/Claro/Sistema), Cor de destaque (bolinhas 40px com anel no selecionado; "Outra" com "+", campo hex e conta-gotas), fundo do notch, prévia.
+- Switches 42x24, chips de opção 32px de altura (setas trocam a opção), campos 34px de altura com canto 8.
+- Linhas: rótulo 13 + dica 12 em text-muted à esquerda, controle à direita, altura mínima 44.
+- Tema Escuro: as mesmas cores do notch (panel, sidebar, surface).
+- Tema Claro (só a janela; ver decisão 0007):
+  - panel #FAF7F0 | sidebar #F1ECE1 | surface #E8E0CF
+  - text #1E1A14 | text-muted #5C5446 | text-dim #665D4E | track #D9D0BD
+  - danger: fundo #F6D5CE, texto #7A1F16
+  - accent-text mistura o accent em direção ao preto (no escuro, ao branco) até 4.5:1
+  - contornos: accent-text 55% (botões, chips, campos) e 25% (divisores)
 
 ## Referência visual
 Mockup no canvas "Aureum Island" (privado). Prints em docs/img/ (adicionar).

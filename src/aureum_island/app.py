@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 
-from PySide6.QtCore import QObject
-from PySide6.QtGui import QAction
+from PySide6.QtCore import QObject, Qt
+from PySide6.QtGui import QAction, QGuiApplication
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 from aureum_island.island import icons
@@ -23,6 +23,7 @@ from aureum_island.services import events as event_service
 from aureum_island.services import focus as focus_service
 from aureum_island.services import tasks as task_service
 from aureum_island.services import water as water_service
+from aureum_island.services.autostart import Autostart
 from aureum_island.services.calendar_sync import CalendarSync
 from aureum_island.services.events import EventRepo, EventService
 from aureum_island.services.focus import FocusService
@@ -32,13 +33,14 @@ from aureum_island.services.lyrics import LyricsService
 from aureum_island.services.media import create_media_service
 from aureum_island.services.reminders import Due, ReminderEngine
 from aureum_island.services.sound import Sound
-from aureum_island.services.storage import db, paths, settings
+from aureum_island.services.storage import db, paths
 from aureum_island.services.storage.settings import Settings
 from aureum_island.services.storage.tasks import TaskRepo
 from aureum_island.services.system_events import SystemEvents
 from aureum_island.services.tasks import TaskService
 from aureum_island.services.volume import create_volume_service
 from aureum_island.services.water import WaterService
+from aureum_island.settings.store import SettingsStore
 from aureum_island.theme.theme import Theme
 from aureum_island.theme.tokens import NOTICE
 
@@ -46,6 +48,11 @@ log = logging.getLogger(__name__)
 
 _TRAY_ICON_SIZE = 32
 _BREAK_NAME = {Phase.SHORT_BREAK: "pausa curta", Phase.LONG_BREAK: "pausa longa"}
+
+
+def _system_dark(hints) -> bool:
+    """Esquema do Windows; desconhecido conta como escuro."""
+    return hints.colorScheme() != Qt.ColorScheme.Light
 
 
 def _hhmm(dt: datetime) -> str:
@@ -57,9 +64,11 @@ class AureumIsland(QObject):
     def __init__(self, app: QApplication, *, debug_paint: bool = False) -> None:
         super().__init__(app)
         self._app = app
-        self._settings_path = paths.settings_path()
-        self.settings = settings.load(self._settings_path)
-        self.theme = Theme.from_settings(self.settings, self)
+        self.store = SettingsStore(paths.settings_path(), parent=self)
+        hints = QGuiApplication.styleHints()
+        self.theme = Theme.from_settings(self.settings, self, system_dark=_system_dark(hints))
+        # Tema "Sistema" da janela de Configurações: segue o Windows por evento.
+        hints.colorSchemeChanged.connect(lambda _s: self.theme.set_system_dark(_system_dark(hints)))
         self.conn = db.connect(paths.db_path())
 
         # Serviços (provedores de avisos)
@@ -132,6 +141,7 @@ class AureumIsland(QObject):
             page.keyboard_requested.connect(self.controller.request_keyboard)
             page.popup_closed.connect(self.controller.popup_closed)
         self.settings_window = None  # criada na primeira abertura
+        self.autostart = Autostart()
 
         # Som, tray e avisos
         self.sound = Sound(self)
@@ -167,11 +177,18 @@ class AureumIsland(QObject):
         self.update_settings(
             hotkey_active=self.hotkey.active, hotkey_status=self.hotkey.status.value
         )
+        self.hotkey.status_changed.connect(
+            lambda: self.update_settings(
+                hotkey_active=self.hotkey.active, hotkey_status=self.hotkey.status.value
+            )
+        )
 
         self.fullscreen = create_fullscreen_watcher(self, debug=debug_paint)
         self.fullscreen.fullscreen_changed.connect(self.controller.set_suppressed)
         if s.hide_on_fullscreen:
             self.fullscreen.start()
+
+        self.store.changed.connect(self._on_settings_changed)
 
         app.aboutToQuit.connect(self._shutdown)
 
@@ -184,25 +201,72 @@ class AureumIsland(QObject):
             self.sound.preload()
         self.reminders.start()  # perdidos com o app fechado
         self.focus.settle()  # fase que venceu há mais de 12 h (sem aviso)
+        if self.settings.autostart:
+            self.autostart.repair()  # pasta do app movida: corrige o caminho no registro
 
     def open_settings(self, section: str | None = None) -> None:
         if self.settings_window is None:
             from aureum_island.settings.window import SettingsWindow
 
-            self.settings_window = SettingsWindow(self.theme, self.calendar_sync)
+            self.settings_window = SettingsWindow(
+                self.theme,
+                self.calendar_sync,
+                store=self.store,
+                hotkey=self.hotkey,
+                autostart=self.autostart,
+                sound=self.sound,
+            )
         self.settings_window.open(section)
 
     def open_calendar_day(self, when: datetime) -> None:
         self.controller.open_page("calendar")
         self.calendar_page.select_day(when.astimezone().date())
 
+    @property
+    def settings(self) -> Settings:
+        return self.store.value
+
     def update_settings(self, **changes) -> Settings:
-        self.settings = self.settings.with_changes(**changes)
-        try:
-            settings.save(self.settings, self._settings_path)
-        except OSError:
-            log.exception("não foi possível salvar as configurações")
-        return self.settings
+        return self.store.update(**changes)
+
+    def _on_settings_changed(self, keys: frozenset[str]) -> None:
+        """Aplica na hora o que mudou nas Configurações."""
+        s = self.settings
+        if "mode" in keys:
+            self.controller.set_minimal(s.mode == "minimal")
+        if "hide_on_fullscreen" in keys:
+            if s.hide_on_fullscreen:
+                self.fullscreen.start()
+            else:
+                self.fullscreen.stop()  # sai da supressão se estava em tela cheia
+        if "reminder_offset_min" in keys:
+            self.tasks.changed.emit()
+            self.calendar_events.changed.emit()
+        if keys & {"sound_enabled", "sound_volume"}:
+            self.sound.configure(enabled=s.sound_enabled, volume=s.sound_volume)
+        if keys & {
+            "focus_minutes",
+            "short_break_minutes",
+            "long_break_minutes",
+            "long_break_every",
+        }:
+            self.focus.set_config(
+                FocusConfig(
+                    s.focus_minutes, s.short_break_minutes, s.long_break_minutes, s.long_break_every
+                )
+            )
+        if any(k.startswith("water_") for k in keys):
+            self.water.changed.emit()
+        if "lyrics_enabled" in keys:
+            self.music_page.reload_lyrics()
+        if "week_start" in keys:
+            self.calendar_page.refresh()
+        if "window_theme" in keys:
+            self.theme.set_window_theme(s.window_theme)
+        if "accent" in keys:
+            self.theme.set_accent(s.accent)
+        if "notch_bg" in keys:
+            self.theme.set_notch_bg(s.notch_bg)
 
     def _water_config(self) -> WaterConfig:
         s = self.settings

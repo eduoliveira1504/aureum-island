@@ -93,7 +93,28 @@ class FocusModel:
     def __init__(self, config: FocusConfig, state: FocusState | None = None) -> None:
         self.config = config
         self.state = state or FocusState()
-        if self.state.cycle > config.long_break_every:
+        self._pending: FocusConfig | None = None  # vale a partir da próxima fase
+        self._fit_cycle()
+
+    def set_config(self, config: FocusConfig) -> None:
+        """Parado: aplica na hora. Rodando ou pausado: a fase atual termina com a
+        duração antiga e a nova vale a partir da próxima fase."""
+        if self.state.status is Status.STOPPED:
+            self.config, self._pending = config, None
+            self._fit_cycle()
+        else:
+            self._pending = config
+
+    @property
+    def pending_config(self) -> FocusConfig | None:
+        return self._pending
+
+    def _apply_pending(self) -> None:
+        if self._pending is not None:
+            self.config, self._pending = self._pending, None
+
+    def _fit_cycle(self) -> None:
+        if self.state.cycle > self.config.long_break_every:
             self.state = replace(self.state, cycle=1)
 
     # --- leitura ------------------------------------------------------------
@@ -147,6 +168,7 @@ class FocusModel:
 
     def restart(self) -> None:
         self.state = FocusState()
+        self._apply_pending()
 
     def settle(self, now: datetime) -> Phase | None:
         """Se a fase em andamento terminou, avança e devolve a fase que terminou."""
@@ -158,6 +180,7 @@ class FocusModel:
         return None
 
     def _advance(self) -> None:
+        self._apply_pending()
         s, every = self.state, self.config.long_break_every
         if s.phase is Phase.FOCUS:
             nxt = Phase.LONG_BREAK if s.cycle % every == 0 else Phase.SHORT_BREAK
@@ -166,3 +189,4 @@ class FocusModel:
             nxt = Phase.FOCUS
             cycle = 1 if s.phase is Phase.LONG_BREAK else s.cycle + 1
         self.state = FocusState(Status.STOPPED, nxt, cycle)
+        self._fit_cycle()

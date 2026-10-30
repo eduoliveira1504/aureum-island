@@ -6,9 +6,8 @@ O link vai para o cofre do Windows ao salvar. Na lista aparece só o domínio.
 from __future__ import annotations
 
 from PySide6.QtCore import QRectF, Qt
-from PySide6.QtGui import QFontMetricsF, QPainter, QPen
+from PySide6.QtGui import QFontMetricsF, QPainter
 from PySide6.QtWidgets import (
-    QAbstractButton,
     QButtonGroup,
     QGridLayout,
     QHBoxLayout,
@@ -22,34 +21,10 @@ from aureum_island.island.widgets import ActionButton, line_edit_style
 from aureum_island.services.calendar_sync import CalendarSync, Source, status_text
 from aureum_island.services.ics import InvalidLink
 from aureum_island.services.storage.secrets import SecretStoreError
+from aureum_island.settings.controls import ColorSwatch
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import ACCENT_PRESETS, COLORS, NOTCH, SETTINGS_WINDOW, TYPOGRAPHY
-
-
-class ColorSwatch(QAbstractButton):
-    def __init__(self, name: str, hex_color: str, theme: Theme, parent: QWidget) -> None:
-        super().__init__(parent)
-        self.hex = hex_color
-        self._theme = theme
-        self.setCheckable(True)
-        self.setFixedSize(SETTINGS_WINDOW.color_swatch + 6, SETTINGS_WINDOW.color_swatch + 6)
-        self.setAccessibleName(f"Cor {name}")
-        self.setToolTip(name)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-
-    def paintEvent(self, event) -> None:  # noqa: N802
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        s = SETTINGS_WINDOW.color_swatch
-        rect = QRectF(3, 3, s, s)
-        painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(qcolor(self.hex))
-        painter.drawEllipse(rect)
-        if self.isChecked() or self.hasFocus():
-            painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.setPen(QPen(qcolor(COLORS.text), NOTCH.focus_ring_width))
-            painter.drawEllipse(QRectF(self.rect()).adjusted(1, 1, -1, -1))
+from aureum_island.theme.tokens import ACCENT_PRESETS, SETTINGS_WINDOW, TYPOGRAPHY
 
 
 class SourceRow(QWidget):
@@ -62,9 +37,9 @@ class SourceRow(QWidget):
         self._info_font = make_font(TYPOGRAPHY.family_body, SETTINGS_WINDOW.hint_size)
         self.info = ""
         theme = section.theme
-        self.refresh_button = ActionButton("Atualizar", theme, parent=self)
+        self.refresh_button = ActionButton("Atualizar", theme, window=True, parent=self)
         self.refresh_button.setAccessibleName(f"Atualizar {source.name}")
-        self.remove_button = ActionButton("Remover", theme, parent=self)
+        self.remove_button = ActionButton("Remover", theme, window=True, parent=self)
         self.remove_button.setAccessibleName(f"Remover {source.name}")
         self.refresh_button.clicked.connect(lambda: section.sync.sync(source.id))
         self.remove_button.clicked.connect(self._remove)
@@ -75,6 +50,7 @@ class SourceRow(QWidget):
         layout.addWidget(self.refresh_button)
         layout.addWidget(self.remove_button)
         self._confirming = False
+        theme.changed.connect(self.update)
 
     def set_info(self, domain: str, status: str) -> None:
         self.info = f"{domain} · {status}" if domain else status
@@ -91,6 +67,7 @@ class SourceRow(QWidget):
         self._section.sync.remove_source(self.source.id)
 
     def paintEvent(self, event) -> None:  # noqa: N802
+        colors = self._section.theme.window
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         dot = SETTINGS_WINDOW.list_dot
@@ -103,12 +80,12 @@ class SourceRow(QWidget):
         nfm, ifm = QFontMetricsF(self._name_font), QFontMetricsF(self._info_font)
         y = (h - nfm.height() - ifm.height()) / 2
         painter.setFont(self._name_font)
-        painter.setPen(qcolor(COLORS.text))
+        painter.setPen(qcolor(colors.text))
         name = nfm.elidedText(self.source.name, Qt.TextElideMode.ElideRight, width)
         painter.drawText(QRectF(x, y, width, nfm.height()), Qt.AlignmentFlag.AlignLeft, name)
         painter.setFont(self._info_font)
         failed = self.source.last_status == "failed"
-        painter.setPen(qcolor(COLORS.danger_text if failed else COLORS.text_muted))
+        painter.setPen(qcolor(colors.danger_text if failed else colors.text_muted))
         info = ifm.elidedText(self.info, Qt.TextElideMode.ElideRight, width)
         painter.drawText(
             QRectF(x, y + nfm.height(), width, ifm.height()), Qt.AlignmentFlag.AlignLeft, info
@@ -146,13 +123,15 @@ class CalendarSection(QWidget):
         self.colors = QButtonGroup(self)
         self.colors.setExclusive(True)
         for i, (name, hex_color) in enumerate(ACCENT_PRESETS.values()):
-            swatch = ColorSwatch(name, hex_color, theme, swatches)
+            swatch = ColorSwatch(name, hex_color, theme, SETTINGS_WINDOW.color_swatch, swatches)
             self.colors.addButton(swatch, i)
             swatch_row.addWidget(swatch)
         swatch_row.addStretch(1)
         self.colors.button(1).setChecked(True)  # Ametista: distingue do accent padrão
 
-        self.add_button = ActionButton("Adicionar agenda", theme, primary=True, parent=self)
+        self.add_button = ActionButton(
+            "Adicionar agenda", theme, primary=True, window=True, parent=self
+        )
         self.add_button.clicked.connect(self.add)
         self.error = QLabel(self)
         self.error.setFont(make_font(TYPOGRAPHY.family_body, SETTINGS_WINDOW.hint_size))
@@ -214,7 +193,7 @@ class CalendarSection(QWidget):
             self.sync.add_source(self.name_input.text(), color, self.link_input.text())
         except InvalidLink as exc:
             self.error.setText(str(exc))
-            self.link_input.setStyleSheet(line_edit_style(self.theme, error=True))
+            self.link_input.setStyleSheet(line_edit_style(self.theme, error=True, window=True))
             self.link_input.setFocus()
             return
         except SecretStoreError:
@@ -241,4 +220,4 @@ class CalendarSection(QWidget):
 
     def _apply_theme(self) -> None:
         for field in (self.name_input, self.link_input):
-            field.setStyleSheet(line_edit_style(self.theme))
+            field.setStyleSheet(line_edit_style(self.theme, window=True))

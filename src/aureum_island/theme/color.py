@@ -67,24 +67,25 @@ def mix(a: str, b: str, t: float) -> str:
     return to_hex(tuple(round(x + (y - x) * t) for x, y in zip(ra, rb, strict=True)))
 
 
-def accent_text(accent: str, surfaces: Iterable[str]) -> str:
+def accent_text(accent: str, surfaces: Iterable[str], toward: str = COLORS.on_accent_light) -> str:
     """Accent ajustado para ser lido como texto sobre todas as superfícies.
 
-    Mistura o accent em direção ao branco em passos de 2% até atingir 4.5:1 contra
-    todas as superfícies. Se já passa, devolve o accent sem mudança. Se nem o branco
-    passa (superfície clara), devolve o branco.
+    Mistura o accent em direção a `toward` (branco nas superfícies escuras, preto nas
+    claras; quem decide é o tema) em passos de 2% até atingir 4.5:1 contra todas as
+    superfícies. Se já passa, devolve o accent sem mudança. Se nem `toward` passa,
+    devolve `toward`.
     """
     surfaces = list(surfaces)
-    white = COLORS.on_accent_light
+    toward = to_hex(parse_hex(toward))
 
     def ok(color: str) -> bool:
         return all(contrast(color, s) >= MIN_TEXT_CONTRAST for s in surfaces)
 
     for step in range(51):
-        candidate = mix(accent, white, step * 0.02) if step else to_hex(parse_hex(accent))
+        candidate = mix(accent, toward, step * 0.02) if step else to_hex(parse_hex(accent))
         if ok(candidate):
             return candidate
-    return white
+    return toward
 
 
 def with_alpha(color: str, alpha: float) -> str:

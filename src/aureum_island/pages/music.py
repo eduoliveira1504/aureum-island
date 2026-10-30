@@ -419,6 +419,11 @@ class MusicPage(QWidget):
         self.lyrics_view.set_state("loading")
         self._lyrics.request(track.artist, track.title, track.album, track.duration_s)
 
+    def reload_lyrics(self) -> None:
+        """Letras ligadas ou desligadas nas Configurações: refaz o pedido da faixa atual."""
+        self._lyrics_key = None
+        self._on_track(self._media.track)
+
     def _on_lyrics(self, key: str, lyrics: Lyrics) -> None:
         if key != self._lyrics_key:
             return  # resposta de uma faixa anterior

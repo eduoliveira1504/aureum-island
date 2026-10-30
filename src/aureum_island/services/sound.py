@@ -33,6 +33,10 @@ class Sound(QObject):
     def play(self) -> None:
         if not self.enabled or self.volume <= 0:
             return
+        self.preview()
+
+    def preview(self) -> None:
+        """Toca no volume atual mesmo com o som desligado (botão "Testar som")."""
         self.preload()
         self._effect.setVolume(self.volume)
         self._effect.play()

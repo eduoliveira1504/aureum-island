@@ -30,6 +30,61 @@ class Colors:
 
 COLORS = Colors()
 
+
+@dataclass(frozen=True)
+class WindowPalette:
+    """Cores da janela de Configurações (o notch é sempre escuro e usa COLORS).
+
+    `accent_toward`: para onde o accent é misturado até virar texto legível
+    (branco no escuro, preto no claro).
+    """
+
+    panel: str
+    sidebar: str
+    surface: str
+    text: str
+    text_muted: str
+    text_dim: str
+    track: str
+    danger_bg: str
+    danger_text: str
+    accent_toward: str
+    # Contornos (botões, chips, campos) e divisores: accent_text com esta opacidade.
+    border_alpha_button: float
+    border_alpha_divider: float
+
+
+WINDOW_DARK = WindowPalette(
+    panel=COLORS.panel,
+    sidebar=COLORS.sidebar,
+    surface=COLORS.surface,
+    text=COLORS.text,
+    text_muted=COLORS.text_muted,
+    text_dim=COLORS.text_dim,
+    track=COLORS.track,
+    danger_bg=COLORS.danger_bg,
+    danger_text=COLORS.danger_text,
+    accent_toward=COLORS.on_accent_light,
+    border_alpha_button=0.30,
+    border_alpha_divider=0.14,
+)
+WINDOW_LIGHT = WindowPalette(
+    panel="#FAF7F0",
+    sidebar="#F1ECE1",
+    surface="#E8E0CF",
+    text="#1E1A14",
+    text_muted="#5C5446",
+    text_dim="#665D4E",
+    track="#D9D0BD",
+    danger_bg="#F6D5CE",
+    danger_text="#7A1F16",
+    accent_toward="#000000",
+    # No claro o accent a 30% some no fundo creme: contorno mais forte.
+    border_alpha_button=0.55,
+    border_alpha_divider=0.25,
+)
+WINDOW_PALETTES = {"dark": WINDOW_DARK, "light": WINDOW_LIGHT}
+
 # Opacidades das bordas derivadas do accent.
 BORDER_ALPHA_NOTCH = 0.20
 BORDER_ALPHA_DIVIDER = 0.14
@@ -272,6 +327,28 @@ class SettingsWindow:
     color_swatch: int = 22
     list_row_height: int = 52
     list_dot: int = 10
+    # Bloco 6: linhas e controles das seções
+    row_min_height: int = 44
+    row_gap: int = 6  # entre o rótulo e a dica
+    subsection_size: int = 15
+    subsection_weight: int = 600
+    subsection_gap: int = 20
+    switch_knob_margin: int = 3
+    chip_padding_x: int = 14
+    chip_gap: int = 8
+    number_width: int = 110
+    time_width: int = 90
+    hotkey_width: int = 200
+    slider_width: int = 200
+    slider_track: int = 4
+    slider_handle: int = 14
+    slider_hit: int = 24
+    control_max_width: int = 520  # coluna dos controles (chips quebram antes disso)
+    preview_width: int = 360
+    preview_height: int = 120
+    preview_notch_width: int = 300
+    preview_notch_height: int = 64
+    preview_radius: int = 22
 
 
 SETTINGS_WINDOW = SettingsWindow()

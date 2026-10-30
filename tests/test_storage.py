@@ -123,7 +123,7 @@ def test_invalid_and_unknown_values_fall_back(tmp_path):
         "mode": "gigante",
         "last_page": "tasks",
         "hide_on_fullscreen": "sim",
-        "hotkey": "",
+        "hotkey": "   ",
         "accent": "dourado",
         "notch_bg": "grafite",
         "chave_nova": 42,

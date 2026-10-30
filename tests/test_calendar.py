@@ -378,10 +378,13 @@ def test_invalid_event_time(page):
     assert page.title_input.text() == "X"
 
 
-def test_settings_window_calendar_section(qtbot, env):
+def test_settings_window_calendar_section(qtbot, env, settings_deps):
     from aureum_island.settings.window import SECTIONS, SettingsWindow
 
-    window = SettingsWindow(Theme(), env.sync)
+    d = settings_deps
+    window = SettingsWindow(
+        Theme(), env.sync, store=d.store, hotkey=d.hotkey, autostart=d.autostart, sound=d.sound
+    )
     qtbot.addWidget(window)
     assert window.size().toTuple() == (1000, 620)
     assert [window.nav.item(i).text() for i in range(window.nav.count())] == [

@@ -25,6 +25,7 @@ WATER_INTERVALS = (30, 45, 60, 90, 120)
 WATER_CUP_OPTIONS = (150, 200, 250, 300, 350, 500)  # sugestões; aceita 50 a 1000
 WATER_CUP_RANGE = (50, 1000)
 HOTKEY_STATUSES = ("inactive", "registered", "fallback", "failed", "unsupported")
+WINDOW_THEMES = ("dark", "light", "system")
 
 # Atalho padrão até o schema 1. Em teclado ABNT2, Ctrl+Alt equivale a AltGr; ver 0003.
 _OLD_DEFAULT_HOTKEY = "Ctrl+Alt+Space"
@@ -35,8 +36,9 @@ class Settings:
     mode: str = "normal"
     last_page: str = "music"
     hide_on_fullscreen: bool = True
-    hotkey: str = "Ctrl+Alt+I"
-    # Preenchidos pelo app ao registrar: qual atalho funcionou e o status (para o Bloco 6).
+    autostart: bool = False  # Iniciar com o Windows (HKCU\...\Run)
+    hotkey: str = "Ctrl+Alt+I"  # "" = sem atalho
+    # Preenchidos pelo app ao registrar: qual atalho funcionou e o status.
     hotkey_active: str | None = None
     hotkey_status: str = "inactive"
     # Avisos
@@ -59,8 +61,10 @@ class Settings:
     water_end: str = "22:00"
     # Música: letras via LRCLIB (única chamada externa do app)
     lyrics_enabled: bool = True
-    # Calendário (a opção na UI entra no Bloco 6)
+    # Calendário
     week_start: str = "sunday"
+    # Aparência. O tema vale só para a janela de Configurações; o notch é sempre escuro.
+    window_theme: str = "system"
     accent: str = DEFAULT_ACCENT
     notch_bg: str = DEFAULT_NOTCH_BG
 
@@ -91,7 +95,8 @@ _VALIDATORS: dict[str, Callable[[Any], bool]] = {
     "mode": lambda v: v in MODES,
     "last_page": lambda v: v in PAGES,
     "hide_on_fullscreen": lambda v: isinstance(v, bool),
-    "hotkey": lambda v: isinstance(v, str) and bool(v.strip()),
+    "autostart": lambda v: isinstance(v, bool),
+    "hotkey": lambda v: isinstance(v, str) and (v == "" or bool(v.strip())),
     "hotkey_active": lambda v: v is None or (isinstance(v, str) and bool(v.strip())),
     "hotkey_status": lambda v: v in HOTKEY_STATUSES,
     "reminder_offset_min": lambda v: v in REMINDER_OFFSETS and not isinstance(v, bool),
@@ -111,9 +116,15 @@ _VALIDATORS: dict[str, Callable[[Any], bool]] = {
     "water_end": lambda v: _is_hhmm(v),
     "lyrics_enabled": lambda v: isinstance(v, bool),
     "week_start": lambda v: v in ("sunday", "monday"),
+    "window_theme": lambda v: v in WINDOW_THEMES,
     "accent": is_hex_color,
     "notch_bg": lambda v: v in NOTCH_BACKGROUNDS,
 }
+
+
+def is_valid(key: str, value: Any) -> bool:
+    validator = _VALIDATORS.get(key)
+    return validator is not None and validator(value)
 
 
 def from_dict(raw: Any) -> Settings:

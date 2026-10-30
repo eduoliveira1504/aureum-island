@@ -9,18 +9,33 @@ from PySide6.QtWidgets import QPushButton, QSlider, QToolButton, QWidget
 from aureum_island.island import icons
 from aureum_island.theme import color
 from aureum_island.theme.fonts import make_font
-from aureum_island.theme.theme import Theme, qcolor
+from aureum_island.theme.theme import Theme, WindowScheme, qcolor
 from aureum_island.theme.tokens import BORDER_ALPHA_DIVIDER, COLORS, NOTCH, PAGES, TYPOGRAPHY
 
 
+def scheme(theme: Theme, window: bool) -> WindowScheme:
+    """Cores do notch (sempre escuro) ou da janela de Configurações (tema escolhido)."""
+    return theme.window if window else theme.notch_scheme
+
+
 class ActionButton(QPushButton):
-    """Botão de 30 px em pílula. Principal: fundo accent; secundário: contorno accent 30%."""
+    """Botão de 30 px em pílula. Principal: fundo accent; secundário: contorno accent 30%.
+
+    `window=True`: usa as cores da janela de Configurações.
+    """
 
     def __init__(
-        self, text: str, theme: Theme, *, primary: bool = False, parent: QWidget | None = None
+        self,
+        text: str,
+        theme: Theme,
+        *,
+        primary: bool = False,
+        window: bool = False,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(text, parent)
         self._theme = theme
+        self._window = window
         self.primary = primary
         self.setFont(
             make_font(TYPOGRAPHY.family_body, PAGES.button_font_size, PAGES.button_font_weight)
@@ -44,7 +59,7 @@ class ActionButton(QPushButton):
         return self.sizeHint()
 
     def paintEvent(self, event) -> None:  # noqa: N802
-        theme = self._theme
+        theme = scheme(self._theme, self._window)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
@@ -63,14 +78,14 @@ class ActionButton(QPushButton):
                 painter.setBrush(qcolor(color.with_alpha(theme.accent, BORDER_ALPHA_DIVIDER)))
             else:
                 painter.setBrush(Qt.BrushStyle.NoBrush)
-            text_color = COLORS.text
+            text_color = theme.text
         painter.drawRoundedRect(rect, radius, radius)
         painter.setPen(qcolor(text_color))
         painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.text())
         if self.hasFocus():
             ring = NOTCH.focus_ring_width
             # No botão principal o anel em accent sumiria; usa a cor do texto.
-            ring_color = COLORS.text if self.primary else theme.accent
+            ring_color = theme.text if self.primary else theme.accent
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.setPen(QPen(qcolor(ring_color), ring))
             inner = QRectF(self.rect()).adjusted(ring / 2, ring / 2, -ring / 2, -ring / 2)
@@ -194,10 +209,17 @@ class ThemedSlider(QSlider):
     """
 
     def __init__(
-        self, theme: Theme, *, track_height: int, handle: int, parent: QWidget | None = None
+        self,
+        theme: Theme,
+        *,
+        track_height: int,
+        handle: int,
+        window: bool = False,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(Qt.Orientation.Horizontal, parent)
         self._theme = theme
+        self._window = window
         self._track_h = track_height
         self._handle = handle
         self.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -233,7 +255,7 @@ class ThemedSlider(QSlider):
         super().mouseReleaseEvent(event)
 
     def paintEvent(self, event) -> None:  # noqa: N802
-        theme = self._theme
+        theme = scheme(self._theme, self._window)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         span = self.maximum() - self.minimum()
@@ -242,15 +264,15 @@ class ThemedSlider(QSlider):
         y = (self.height() - h) / 2
         x0, width = handle / 2, self.width() - handle
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(qcolor(COLORS.track))
+        painter.setBrush(qcolor(theme.track))
         painter.drawRoundedRect(QRectF(x0, y, width, h), h / 2, h / 2)
-        fill = theme.accent if self.isEnabled() else COLORS.text_dim
+        fill = theme.accent if self.isEnabled() else theme.text_dim
         painter.setBrush(qcolor(fill))
         if ratio > 0:
             painter.drawRoundedRect(QRectF(x0, y, width * ratio, h), h / 2, h / 2)
         cx = x0 + width * ratio
         if handle and self.isEnabled():
-            painter.setBrush(qcolor(COLORS.text))
+            painter.setBrush(qcolor(theme.text))
             painter.drawEllipse(
                 QRectF(cx - handle / 2, (self.height() - handle) / 2, handle, handle)
             )
@@ -262,12 +284,13 @@ class ThemedSlider(QSlider):
             painter.drawRoundedRect(r, r.height() / 2, r.height() / 2)
 
 
-def line_edit_style(theme: Theme, *, error: bool = False) -> str:
-    """Campo de texto no notch (cores e medidas do tema)."""
-    border = COLORS.danger_text if error else theme.border_button
+def line_edit_style(theme: Theme, *, error: bool = False, window: bool = False) -> str:
+    """Campo de texto no notch ou na janela de Configurações (cores e medidas do tema)."""
+    colors = scheme(theme, window)
+    border = colors.danger_text if error else colors.border_button
     return (
         "QLineEdit {"
-        f" background: {COLORS.surface}; color: {COLORS.text};"
+        f" background: {colors.surface}; color: {colors.text};"
         f" border: 1px solid {_css(border)}; border-radius: {PAGES.button_height // 2}px;"
         f" padding: 0 {PAGES.button_padding_x}px;"
         f" selection-background-color: {theme.accent}; selection-color: {theme.on_accent};"

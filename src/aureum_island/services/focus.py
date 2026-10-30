@@ -68,6 +68,11 @@ class FocusService(QObject):
     def restart(self) -> None:
         self._do(self.model.restart)
 
+    def set_config(self, config: FocusConfig) -> None:
+        """Durações novas (Configurações). Ver FocusModel.set_config."""
+        self.model.set_config(config)
+        self.changed.emit()
+
     def settle(self) -> Phase | None:
         """Conclui a fase que venceu (chamado quando o aviso dispara e no início)."""
         ended = self.model.settle(self._now())

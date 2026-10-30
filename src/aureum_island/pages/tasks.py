@@ -32,7 +32,7 @@ from aureum_island.services.storage.tasks import Task
 from aureum_island.services.tasks import TaskService
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, MOTION, NOTCH, PAGES, TYPOGRAPHY
+from aureum_island.theme.tokens import MOTION, NOTCH, PAGES, TYPOGRAPHY
 
 
 def _local_now() -> datetime:
@@ -67,7 +67,7 @@ class TaskCheck(QCheckBox):
             pm = icons.pixmap("check", theme.on_accent, glyph, self.devicePixelRatioF())
             painter.drawPixmap(3, 3, pm)
         else:
-            border = COLORS.text if self.underMouse() else COLORS.text_muted
+            border = self._theme.notch.text if self.underMouse() else self._theme.notch.text_muted
             painter.setPen(QPen(qcolor(border), 1.5))
             painter.setBrush(Qt.BrushStyle.NoBrush)
             painter.drawRoundedRect(rect, radius, radius)
@@ -153,7 +153,13 @@ class TaskRow(QWidget):
             width = max(0.0, pill.x() - PAGES.task_spacing - x)
             fm = QFontMetricsF(self._title_font)
             painter.setFont(self._title_font)
-            painter.setPen(qcolor(COLORS.text_dim if self.task.done else COLORS.text))
+            painter.setPen(
+                qcolor(
+                    self.page.theme.notch.subtle_text
+                    if self.task.done
+                    else self.page.theme.notch.text
+                )
+            )
             text = fm.elidedText(self.task.title, Qt.TextElideMode.ElideRight, width)
             painter.drawText(
                 QRectF(x, 0, width, self.height()), Qt.AlignmentFlag.AlignVCenter, text
@@ -162,13 +168,13 @@ class TaskRow(QWidget):
             painter.setFont(self._time_font)
             radius = pill.height() / 2
             if self.task.done:
-                fg, bg = COLORS.text_dim, None
+                fg, bg = self.page.theme.notch.subtle_text, None
             elif self.overdue:
-                fg, bg = COLORS.danger_text, COLORS.danger_bg
+                fg, bg = self.page.theme.notch.on_danger, self.page.theme.notch.danger
             elif self.is_next:
                 fg, bg = theme.on_accent, theme.accent
             else:
-                fg, bg = COLORS.text_muted, None
+                fg, bg = self.page.theme.notch.text_muted, None
             if bg is not None:
                 painter.setPen(Qt.PenStyle.NoPen)
                 painter.setBrush(qcolor(bg))
@@ -267,6 +273,8 @@ class UndoRow(QWidget):
     def __init__(self, page: TasksPage, task: Task) -> None:
         super().__init__()
         self.task = task
+        self._theme = page.theme
+        page.theme.changed.connect(self.update)
         self.setFixedHeight(PAGES.task_row_height)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(PAGES.task_checkbox + PAGES.task_spacing, 0, 0, 0)
@@ -281,7 +289,7 @@ class UndoRow(QWidget):
     def paintEvent(self, event) -> None:  # noqa: N802
         painter = QPainter(self)
         painter.setFont(self._font)
-        painter.setPen(qcolor(COLORS.text_dim))
+        painter.setPen(qcolor(self._theme.notch.subtle_text))
         x = PAGES.task_checkbox + PAGES.task_spacing
         width = max(0, self.undo.x() - PAGES.task_spacing - x)
         text = QFontMetricsF(self._font).elidedText(self._text, Qt.TextElideMode.ElideRight, width)
@@ -291,14 +299,19 @@ class UndoRow(QWidget):
 class HoverScrollArea(QScrollArea):
     """Rolagem sem barra visível até o mouse passar por cima."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, theme: Theme, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._theme = theme
         self.setWidgetResizable(True)
         self.setFrameShape(QScrollArea.Shape.NoFrame)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setStyleSheet(scrollbar_style())
+        self._apply_theme()
+        theme.changed.connect(self._apply_theme)
         self.viewport().setAutoFillBackground(False)
+
+    def _apply_theme(self) -> None:
+        self.setStyleSheet(scrollbar_style(self._theme))
 
     def enterEvent(self, event) -> None:  # noqa: N802
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -335,7 +348,7 @@ class TasksPage(QWidget):
         self._list_layout.setContentsMargins(0, 0, PAGES.scrollbar_width + 2, 0)
         self._list_layout.setSpacing(0)
         self._list_layout.addStretch(1)
-        self.scroll = HoverScrollArea(self)
+        self.scroll = HoverScrollArea(theme, self)
         self.scroll.setWidget(self._list)
 
         self.title_input = QLineEdit(self)

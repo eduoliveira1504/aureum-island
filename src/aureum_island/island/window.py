@@ -21,7 +21,7 @@ from aureum_island.island.state import State
 from aureum_island.pages import PageInfo
 from aureum_island.pages.placeholder import PlaceholderPage
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, NOTCH
+from aureum_island.theme.tokens import NOTCH, SHADOW
 
 _FLAGS = (
     Qt.WindowType.Tool
@@ -65,7 +65,7 @@ class OpenView(QWidget):
         self.stack.setFixedHeight(NOTCH.open_content_height)
         page_widgets = page_widgets or {}
         for page in pages:
-            widget = page_widgets.get(page.id) or PlaceholderPage(page)
+            widget = page_widgets.get(page.id) or PlaceholderPage(page, theme)
             self.stack.addWidget(widget)
         self.bar = PageBar(pages, theme, self)
         self.bar.page_changed.connect(self.stack.setCurrentIndex)
@@ -242,7 +242,7 @@ class ShadowWindow(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         painter.setPen(Qt.PenStyle.NoPen)
-        base = QColor(qcolor(COLORS.shadow))
+        base = QColor(qcolor(SHADOW))
         # Camadas concêntricas: mais forte perto do notch, some na borda da margem.
         for i in range(m, 0, -2):
             falloff = 1 - i / m

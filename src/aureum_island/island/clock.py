@@ -14,7 +14,7 @@ from PySide6.QtWidgets import QWidget
 
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, NOTCH, TYPOGRAPHY
+from aureum_island.theme.tokens import NOTCH, TYPOGRAPHY
 
 WEEKDAYS_SHORT = ("seg", "ter", "qua", "qui", "sex", "sáb", "dom")
 WEEKDAYS_LONG = (
@@ -115,10 +115,10 @@ class ClockView(QWidget):
         h = self.height()
 
         painter.setFont(self._time_font)
-        painter.setPen(qcolor(COLORS.text))
+        painter.setPen(qcolor(self._theme.notch.text))
         painter.drawText(QRectF(x, 0, time_w, h), Qt.AlignmentFlag.AlignVCenter, self._time)
 
         painter.setFont(self._date_font)
-        painter.setPen(qcolor(COLORS.text_muted))
+        painter.setPen(qcolor(self._theme.notch.text_muted))
         date_rect = QRectF(x + time_w + NOTCH.closed_gap, 0, date_w, h)
         painter.drawText(date_rect, Qt.AlignmentFlag.AlignVCenter, self._date)

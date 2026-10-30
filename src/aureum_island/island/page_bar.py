@@ -19,7 +19,7 @@ from aureum_island.island import icons
 from aureum_island.pages import PageInfo
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, NOTCH, TYPOGRAPHY
+from aureum_island.theme.tokens import NOTCH, TYPOGRAPHY
 
 _WHEEL_STEP = 120  # um "dente" da roda
 
@@ -64,9 +64,9 @@ class PageButton(QToolButton):
         if self.isChecked():
             color = theme.accent_text
         elif self.underMouse() or self.isDown():
-            color = COLORS.text
+            color = self._theme.notch.text
         else:
-            color = COLORS.text_muted
+            color = self._theme.notch.text_muted
         size = NOTCH.page_icon
         pm = icons.pixmap(self._icon_name, color, size, self.devicePixelRatioF())
         painter.drawPixmap(int((self.width() - size) / 2), int((self.height() - size) / 2), pm)

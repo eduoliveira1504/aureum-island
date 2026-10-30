@@ -20,7 +20,7 @@ from aureum_island.services.storage.db import utc_now
 from aureum_island.services.volume import VolumeService
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, PAGES, TYPOGRAPHY
+from aureum_island.theme.tokens import PAGES, TYPOGRAPHY
 
 _SEEK_STEP_S = 5
 _VOLUME_STEP = 5
@@ -42,8 +42,10 @@ def spoken_time(seconds: float | None) -> str:
 
 
 class CoverView(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, theme: Theme, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._theme = theme
+        theme.changed.connect(self.update)
         self.setObjectName("music-cover")
         self.image: QImage | None = None
         self.setFixedSize(PAGES.music_cover, PAGES.music_cover)
@@ -62,9 +64,11 @@ class CoverView(QWidget):
         path.addRoundedRect(QRectF(self.rect()), radius, radius)
         painter.setClipPath(path)
         if self.image is None:
-            painter.fillPath(path, qcolor(COLORS.surface))
+            painter.fillPath(path, qcolor(self._theme.notch.panel))
             size = PAGES.music_cover_icon
-            pm = icons.pixmap("music", COLORS.text_dim, size, self.devicePixelRatioF())
+            pm = icons.pixmap(
+                "music", self._theme.notch.subtle_text, size, self.devicePixelRatioF()
+            )
             painter.drawPixmap((self.width() - size) // 2, (self.height() - size) // 2, pm)
             return
         # Corta para quadrado (capas de vídeo são 16:9).
@@ -77,8 +81,10 @@ class CoverView(QWidget):
 class TrackText(QWidget):
     """Título (15/600) e artista (13), com reticências quando não cabem."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, theme: Theme, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._theme = theme
+        theme.changed.connect(self.update)
         self.title, self.artist = "", ""
         self._title_font = make_font(
             TYPOGRAPHY.family_body, PAGES.music_title_size, PAGES.music_title_weight
@@ -101,11 +107,11 @@ class TrackText(QWidget):
         width = self.width()
         tfm, afm = QFontMetricsF(self._title_font), QFontMetricsF(self._artist_font)
         painter.setFont(self._title_font)
-        painter.setPen(qcolor(COLORS.text))
+        painter.setPen(qcolor(self._theme.notch.text))
         title = tfm.elidedText(self.title, Qt.TextElideMode.ElideRight, width)
         painter.drawText(QRectF(0, 0, width, tfm.height()), Qt.AlignmentFlag.AlignLeft, title)
         painter.setFont(self._artist_font)
-        painter.setPen(qcolor(COLORS.text_muted))
+        painter.setPen(qcolor(self._theme.notch.text_muted))
         artist = afm.elidedText(self.artist, Qt.TextElideMode.ElideRight, width)
         y = tfm.height() + PAGES.music_title_gap
         painter.drawText(QRectF(0, y, width, afm.height()), Qt.AlignmentFlag.AlignLeft, artist)
@@ -132,8 +138,8 @@ class MusicPage(QWidget):
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._tick)
 
-        self.cover = CoverView(self)
-        self.text = TrackText(self)
+        self.cover = CoverView(theme, self)
+        self.text = TrackText(theme, self)
         self.progress = ThemedSlider(
             theme, track_height=PAGES.music_progress_height, handle=0, parent=self
         )
@@ -323,5 +329,5 @@ class MusicPage(QWidget):
     def _apply_theme(self) -> None:
         for label in (self.elapsed, self.total):
             palette = label.palette()
-            palette.setColor(QPalette.ColorRole.WindowText, qcolor(COLORS.text_muted))
+            palette.setColor(QPalette.ColorRole.WindowText, qcolor(self._theme.notch.text_muted))
             label.setPalette(palette)

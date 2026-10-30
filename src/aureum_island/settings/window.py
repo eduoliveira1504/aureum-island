@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
 )
 
 from aureum_island.island import icons, win32
-from aureum_island.island.widgets import _css
 from aureum_island.services.autostart import Autostart
 from aureum_island.services.calendar_sync import CalendarSync
 from aureum_island.services.hotkey import GlobalHotkey
@@ -180,25 +179,27 @@ class SettingsWindow(QWidget):
         self.setStyleSheet(
             f"#settings {{ background: {w.panel}; }}"
             f"#settings QLabel {{ color: {w.text}; }}"
-            f"#sidebar {{ background: {w.sidebar}; }}"
+            f"#sidebar {{ background: {w.rail}; }}"
             f"#content, #sectionScroll, #section {{ background: {w.panel}; }}"
             f"#settings QLabel#brand {{ color: {w.accent_text}; }}"
             f"#settings QLabel#hint {{ color: {w.text_muted}; }}"
             f"#settings QLabel#error {{ color: {w.danger_text}; }}"
+            f"#settings QLabel#label {{ color: {w.text_muted}; }}"
+            f"#settings QLabel#subtle {{ color: {w.subtle_text}; }}"
             f"#nav {{ background: transparent; border: 0; color: {w.text_muted};"
             " outline: 0; }"
             f"#nav::item {{ border-radius: {r}px; padding: 0 {SETTINGS_WINDOW.gap}px; }}"
-            f"#nav::item:hover {{ background: {w.surface}; color: {w.text}; }}"
-            f"#nav::item:selected {{ background: {w.surface}; color: {w.accent_text}; }}"
+            f"#nav::item:hover {{ background: {w.elevated}; color: {w.text}; }}"
+            f"#nav::item:selected {{ background: {w.elevated}; color: {w.accent_text}; }}"
             f"#nav::item:selected:focus {{ border: {NOTCH.focus_ring_width}px solid {w.accent}; }}"
             f"#settings QScrollBar:vertical {{ background: transparent; width: {sb}px; }}"
-            f"#settings QScrollBar::handle:vertical {{ background: {w.track};"
+            f"#settings QScrollBar::handle:vertical {{ background: {w.border};"
             f" border-radius: {sb // 2}px; min-height: {PAGES.scrollbar_min_handle}px; }}"
             "#settings QScrollBar::add-line, #settings QScrollBar::sub-line { height: 0; }"
             "#settings QScrollBar::add-page, #settings QScrollBar::sub-page"
             " { background: transparent; }"
-            f"#settings QToolTip {{ background: {w.surface}; color: {w.text};"
-            f" border: 1px solid {_css(w.border_divider)}; }}"
+            f"#settings QToolTip {{ background: {w.elevated}; color: {w.text};"
+            f" border: 1px solid {w.border}; }}"
         )
         if self.isVisible():
             win32.set_dark_title_bar(self, w.name == "dark")

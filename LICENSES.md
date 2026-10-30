@@ -2,8 +2,8 @@
 
 | Recurso | Arquivos | Licença |
 |---|---|---|
-| Fonte Inter | `src/aureum_island/assets/fonts/Inter[opsz,wght].ttf` | SIL Open Font License 1.1 (`Inter-OFL.txt`) |
-| Fonte Cinzel | `src/aureum_island/assets/fonts/Cinzel[wght].ttf` | SIL Open Font License 1.1 (`Cinzel-OFL.txt`) |
+| Fonte Sora | `src/aureum_island/assets/fonts/Sora[wght].ttf` (google/fonts, `ofl/sora`) | SIL Open Font License 1.1 (`Sora-OFL.txt`) |
+| Fonte Figtree | `src/aureum_island/assets/fonts/Figtree[wght].ttf` (google/fonts, `ofl/figtree`) | SIL Open Font License 1.1 (`Figtree-OFL.txt`) |
 | Ícones | `src/aureum_island/assets/icons/*.svg` | © Aureum. Desenhos próprios. |
 | Sons | `src/aureum_island/assets/sounds/*.wav` | © Aureum, todos os direitos reservados. Ver abaixo. |
 

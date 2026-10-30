@@ -1,23 +1,59 @@
 # Design
 
-Visual: preto quente + dourado Aureum. Notch sempre escuro.
+Visual igual ao Aureum Voice: paletas, re-tint pelo accent e fontes. Notch sempre escuro. Ver decisão 0009.
 
 ## Cores (tokens)
-- accent (padrão Dourado): #E8B531
-- on-accent (texto sobre o destaque): #0A0908 (recalcular contraste ao mudar a cor)
-- notch-bg: Preto #070605 (padrão), Marrom escuro #1A120C, Grafite #1C1915 (todos com contraste ≥ 4.5:1 para text, text-muted e text-dim)
-- surface: #14110D | panel: #0D0B09 | sidebar: #090806
-- text: #F1E8D3 | text-muted: #A89F88 | text-dim: #8F866F
-- track (barras vazias): #2A2419
-- border: accent com 20% de opacidade (notch), 14% (divisores), 30% (botões)
-- danger: fundo #5A2620, texto #F6D5CE
-- Destaques disponíveis (iguais ao Aureum Voice): Dourado #E8B531, Ametista #8B5CF6, Esmeralda #3FBF7F, Brasa #E06A4E, Safira #4F8CC9, "Outra" com conta-gotas e campo hex.
-- on-accent e accent-text são calculados a partir do accent (theme/color.py): texto sobre o accent e accent usado como texto sempre com contraste ≥ 4.5:1.
+Valores exatos do `main.css` do Aureum Voice, desenhados em volta do Dourado:
+
+| Token | Escuro | Claro |
+|---|---|---|
+| bg-rail | #0A0908 | #EFE9DC |
+| bg-panel | #12110D | #F6F2E8 |
+| bg-main | #17150F | #FFFFFF |
+| bg-elevated | #201D16 | #F3EEE2 |
+| border | #2A261D | #E4DCCB |
+| text | #F4EFE4 | #1C1810 |
+| text-muted | #A8A090 | #6B6354 |
+| success | #3FBF7F | #2E9E65 |
+| danger | #C7363B | #C7363B |
+
+- **fg-subtle:** `color-mix(in oklab, text-muted 72%, bg-main)`.
+- **Re-tint:** fundos, border, text e text-muted seguem o matiz do accent (OKLCH, referência Dourado). success e danger não mudam. É calculado só quando o accent ou o tema mudam.
+- **Cores derivadas do accent:**
+  - on-accent: tinta #1A1406 ou #FFFFFF, a que contrastar mais;
+  - accent-text: o accent misturado para o preto (fundo claro) ou o branco (fundo escuro) em passos de 2% até 4.5:1 contra os 4 fundos;
+  - accent-hover: accent + 12% de branco (escuro) ou 10% de preto (claro), em oklab.
+- **Como texto (divergência do Voice, por acessibilidade):** subtle-text, success-text e danger-text passam por `readable_on`, como o accent-text. Os valores do Voice ficam para preenchimento. Só texto de controle desabilitado pode ficar abaixo de 4.5.
+- **Sobre danger:** texto #FFFFFF.
+- **Destaques (iguais ao Voice):** Dourado #E8B531, Ametista #8B5CF6, Esmeralda #3FBF7F, Brasa #E06A4E, Safira #4F8CC9, e "Outra" (seletor de cor e campo hex).
+- **Notch (sempre a paleta escura re-tingida):**
+
+  | Notch | Paleta |
+  |---|---|
+  | fundo | bg-rail |
+  | superfícies (campos, cartões) | bg-panel |
+  | menus | bg-main |
+  | hover/selecionado | bg-elevated |
+  | track e divisores | border |
+  | texto | text, text-muted e subtle-text |
+
+  - O contorno do notch aberto (accent 20%) e a linha mínima (accent 55%) continuam com o accent.
+  - border fica para divisores, campos e botões secundários.
+- **Janela de Configurações (tema escolhido):**
+
+  | Janela | Paleta |
+  |---|---|
+  | sidebar | bg-rail |
+  | conteúdo | bg-panel |
+  | campos e segmentado | bg-main |
+  | selecionado e hover | bg-elevated |
+  | contornos | border |
 
 ## Tipografia
-- Títulos pequenos: Cinzel, caixa alta, letter-spacing ~0.18em, 10–11px, cor accent ou text-muted.
-- Resto: Inter 12–15px. Números com tabular-nums. Relógio do pomodoro 28px/600.
-- Empacotar as fontes no app (não depender de internet).
+- **Títulos e display:** Sora. Os títulos pequenos continuam em caixa alta, letter-spacing ~0.18em, 10–11px, cor accent-text ou text-muted.
+- **Texto:** Figtree 12–15px. Números com tabular-nums. Relógio do pomodoro 28px/600.
+- Ambas variáveis (OFL), do repositório google/fonts, as mesmas do Voice. Ficam empacotadas no app, sem depender de internet.
+- **Código hex:** fonte monoespaçada do Windows (Consolas).
 
 ## Notch
 - Fechado: 190x34, canto inferior 18px, relógio (13px/600) + data (11px).
@@ -40,16 +76,20 @@ Visual: preto quente + dourado Aureum. Notch sempre escuro.
 
 ## Janela de Configurações
 - 1000x620, sidebar 220 + conteúdo. Seções: Geral, Calendário, Avisos, Foco e água, Aparência. Tudo se aplica na hora.
-- Aparência: Tema (Escuro/Claro/Sistema), Cor de destaque (bolinhas 40px com anel no selecionado; "Outra" com "+", campo hex e conta-gotas), fundo do notch, prévia.
-- Switches 42x24, chips de opção 32px de altura (setas trocam a opção), campos 34px de altura com canto 8.
-- Linhas: rótulo 13 + dica 12 em text-muted à esquerda, controle à direita, altura mínima 44.
-- Tema Escuro: as mesmas cores do notch (panel, sidebar, surface).
-- Tema Claro (só a janela; ver decisão 0007):
-  - panel #FAF7F0 | sidebar #F1ECE1 | surface #E8E0CF
-  - text #1E1A14 | text-muted #5C5446 | text-dim #665D4E | track #D9D0BD
-  - danger: fundo #F6D5CE, texto #7A1F16
-  - accent-text mistura o accent em direção ao preto (no escuro, ao branco) até 4.5:1
-  - contornos: accent-text 55% (botões, chips, campos) e 25% (divisores)
+- **Aparência, igual à do Voice:** duas colunas. Controles à esquerda; "Prévia" (280 px) à direita, com o notch aberto em miniatura.
+  - **Tema:** segmentado Escuro, Claro e Sistema, com ícones lua, sol e monitor. Com "Sistema", a dica "Segue o modo claro/escuro do Windows."
+  - **Cor de destaque:**
+    - bolinhas de 40 px com o nome embaixo;
+    - a selecionada tem anel na cor do texto e ✓ em on-accent;
+    - "Outra" tem borda tracejada e conta-gotas, e fica preenchida e com anel quando a cor não é preset. Ela abre o QColorDialog do Qt, que tem "Pick Screen Color".
+  - **Código hex:** 7 caracteres, fonte monoespaçada e maiúsculas. Aplica ao digitar uma cor válida.
+  - **Dica:** "O texto sobre a cor e os links ajustam o contraste sozinhos para continuarem legíveis."
+- **Controles:**
+  - switches 42x24;
+  - chips de opção de 32px (setas trocam a opção);
+  - segmentado com 32px por opção, moldura de canto 12;
+  - campos de 34px.
+- **Linhas:** rótulo 13 + dica 12 em text-muted à esquerda, controle à direita, altura mínima 44. Rótulos acima de controles: 12/600, caixa alta, text-muted.
 
 ## Referência visual
 Mockup no canvas "Aureum Island" (privado). Prints em docs/img/ (adicionar).

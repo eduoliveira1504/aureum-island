@@ -15,7 +15,7 @@ from aureum_island.pages.water_model import hourly_totals, segments_filled
 from aureum_island.services.water import WaterService
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, MOTION, PAGES, TYPOGRAPHY
+from aureum_island.theme.tokens import MOTION, PAGES, TYPOGRAPHY
 
 
 def format_ml(ml: int) -> str:
@@ -26,8 +26,10 @@ def format_ml(ml: int) -> str:
 class WaterValue(QWidget):
     """'750' grande + ' / 2.000 ml' na mesma linha de base."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, theme: Theme, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self._theme = theme
+        theme.changed.connect(self.update)
         self.total, self.goal = 0, 2000
         self._big = make_font(
             TYPOGRAPHY.family_body, PAGES.water_value_size, PAGES.water_value_weight, tabular=True
@@ -48,10 +50,10 @@ class WaterValue(QWidget):
         baseline = big_fm.ascent()
         big = format_ml(self.total)
         painter.setFont(self._big)
-        painter.setPen(qcolor(COLORS.text))
+        painter.setPen(qcolor(self._theme.notch.text))
         painter.drawText(0, round(baseline), big)
         painter.setFont(self._small)
-        painter.setPen(qcolor(COLORS.text_muted))
+        painter.setPen(qcolor(self._theme.notch.text_muted))
         x = big_fm.horizontalAdvance(big) + PAGES.button_gap
         painter.drawText(round(x), round(baseline), f"/ {format_ml(self.goal)} ml")
 
@@ -101,15 +103,15 @@ class HourlyChart(QWidget):
             if hour == self.current_hour:
                 fill = self._theme.accent
             elif ml:
-                fill = COLORS.text_muted
+                fill = self._theme.notch.text_muted
             else:
-                fill = COLORS.track
+                fill = self._theme.notch.border
             painter.setBrush(qcolor(fill))
             radius = min(bar_w / 2, PAGES.water_bar_min)
             painter.drawRoundedRect(QRectF(x, chart_h - h, bar_w, h), radius, radius)
         # Rótulos: primeira, do meio e última hora.
         painter.setFont(self._axis)
-        painter.setPen(qcolor(COLORS.text_dim))
+        painter.setPen(qcolor(self._theme.notch.subtle_text))
         for i in sorted({0, n // 2, n - 1}):
             label = f"{self.data[i][0]}h"
             center = i * (bar_w + gap) + bar_w / 2
@@ -131,7 +133,7 @@ class WaterPage(QWidget):
         self._undo_timer.setSingleShot(True)
         self._undo_timer.timeout.connect(self._hide_undo)
 
-        self.value = WaterValue(self)
+        self.value = WaterValue(theme, self)
         self.remaining = QLabel(self)
         self.remaining.setFont(make_font(TYPOGRAPHY.family_body, TYPOGRAPHY.body_size_min))
         self.segments = Segments(
@@ -223,5 +225,5 @@ class WaterPage(QWidget):
 
     def _apply_theme(self) -> None:
         palette = self.remaining.palette()
-        palette.setColor(QPalette.ColorRole.WindowText, qcolor(COLORS.text_muted))
+        palette.setColor(QPalette.ColorRole.WindowText, qcolor(self._theme.notch.text_muted))
         self.remaining.setPalette(palette)

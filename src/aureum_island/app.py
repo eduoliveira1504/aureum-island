@@ -259,8 +259,6 @@ class AureumIsland(QObject):
             self.theme.set_window_theme(s.window_theme)
         if "accent" in keys:
             self.theme.set_accent(s.accent)
-        if "notch_bg" in keys:
-            self.theme.set_notch_bg(s.notch_bg)
 
     def _water_config(self) -> WaterConfig:
         s = self.settings

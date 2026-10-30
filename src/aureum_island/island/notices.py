@@ -22,7 +22,7 @@ from aureum_island.island.widgets import ActionButton
 from aureum_island.theme import color
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, NOTICE, PAGES, TYPOGRAPHY
+from aureum_island.theme.tokens import NOTICE, PAGES, TYPOGRAPHY
 
 log = logging.getLogger(__name__)
 
@@ -162,11 +162,11 @@ class NoticeView(QWidget):
         block = title_fm.height() + sub_fm.height()
         y = (h - block) / 2
         painter.setFont(self._title_font)
-        painter.setPen(qcolor(COLORS.text))
+        painter.setPen(qcolor(self._theme.notch.text))
         title = title_fm.elidedText(self.notice.title, Qt.TextElideMode.ElideRight, width)
         painter.drawText(QRectF(x, y, width, title_fm.height()), Qt.AlignmentFlag.AlignLeft, title)
         painter.setFont(self._subtitle_font)
-        painter.setPen(qcolor(COLORS.text_muted))
+        painter.setPen(qcolor(self._theme.notch.text_muted))
         sub = sub_fm.elidedText(self.notice.subtitle, Qt.TextElideMode.ElideRight, width)
         sub_rect = QRectF(x, y + title_fm.height(), width, sub_fm.height())
         painter.drawText(sub_rect, Qt.AlignmentFlag.AlignLeft, sub)

@@ -1,13 +1,15 @@
-"""Theme: cores derivadas do accent e do fundo do notch escolhidos pelo usuário.
+"""Theme: as paletas do Aureum Voice re-tingidas pelo accent escolhido.
 
-O notch é sempre escuro. A janela de Configurações tem o próprio esquema (`window`):
-Escuro, Claro ou Sistema. Emite `changed` quando qualquer entrada muda, para a UI se
-atualizar sem reiniciar.
+- `notch`: sempre a paleta escura re-tingida (o notch é sempre escuro).
+- `window`: a janela de Configurações, no tema escolhido (Escuro, Claro ou Sistema).
+
+Tudo é calculado só quando o accent ou o tema mudam, nunca por frame. Emite `changed`
+para a UI repintar sem reiniciar. Ver docs/decisions/0009.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QColor
@@ -15,17 +17,13 @@ from PySide6.QtGui import QColor
 from aureum_island.services.storage.settings import WINDOW_THEMES, Settings
 from aureum_island.theme import color
 from aureum_island.theme.tokens import (
-    BORDER_ALPHA_BUTTON,
-    BORDER_ALPHA_DIVIDER,
     BORDER_ALPHA_MINIMAL,
     BORDER_ALPHA_NOTCH,
-    COLORS,
     DEFAULT_ACCENT,
-    DEFAULT_NOTCH_BG,
-    NOTCH_BACKGROUNDS,
-    WINDOW_DARK,
-    WINDOW_PALETTES,
-    WindowPalette,
+    ON_DANGER,
+    PALETTES,
+    RETINT_REFERENCE,
+    SUBTLE_MUTED_WEIGHT,
 )
 
 
@@ -37,20 +35,79 @@ def qcolor(value: str) -> QColor:
 
 
 @dataclass(frozen=True)
-class WindowScheme:
-    """Cores prontas da janela de Configurações (paleta + derivadas do accent)."""
+class Scheme:
+    """Cores prontas de um tema. Fundos, borda e texto já re-tingidos pelo accent.
+
+    Os `*_text` são as versões legíveis (≥ 4.5:1 contra os quatro fundos) de cores que
+    também existem como preenchimento: fg-subtle, success, danger e o accent.
+    """
 
     name: str  # dark | light
-    palette: WindowPalette
+    rail: str
+    panel: str
+    main: str
+    elevated: str
+    border: str
+    text: str
+    text_muted: str
+    subtle: str  # fg-subtle como no Voice (preenchimento; texto desabilitado)
+    subtle_text: str
+    success: str
+    success_text: str
+    danger: str
+    danger_text: str
+    on_danger: str
     accent: str
     on_accent: str
     accent_text: str
-    border_button: str
-    border_divider: str
+    accent_hover: str
 
-    def __getattr__(self, item: str) -> str:
-        # panel, sidebar, surface, text, ... vêm da paleta.
-        return getattr(self.palette, item)
+    @property
+    def surfaces(self) -> tuple[str, str, str, str]:
+        return self.rail, self.panel, self.main, self.elevated
+
+
+def build_scheme(name: str, accent: str) -> Scheme:
+    """Paleta `name` do Voice re-tingida para `accent`, com as cores derivadas."""
+    p = PALETTES[name]
+
+    def tint(value: str) -> str:
+        return color.retint(value, accent, RETINT_REFERENCE)
+
+    rail, panel, main, elevated = (
+        tint(c) for c in (p.bg_rail, p.bg_panel, p.bg_main, p.bg_elevated)
+    )
+    surfaces = (rail, panel, main, elevated)
+    text_muted = tint(p.text_muted)
+    subtle = color.mix_oklab(text_muted, main, SUBTLE_MUTED_WEIGHT)
+    return Scheme(
+        name=name,
+        rail=rail,
+        panel=panel,
+        main=main,
+        elevated=elevated,
+        border=tint(p.border),
+        text=tint(p.text),
+        text_muted=text_muted,
+        subtle=subtle,
+        subtle_text=color.readable_on(subtle, surfaces),
+        success=p.success,
+        success_text=color.readable_on(p.success, surfaces),
+        danger=p.danger,
+        danger_text=color.readable_on(p.danger, surfaces),
+        on_danger=ON_DANGER,
+        **_accent_colors(name, accent, surfaces),
+    )
+
+
+def _accent_colors(name: str, accent: str, surfaces: tuple[str, ...]) -> dict[str, str]:
+    p = PALETTES[name]
+    return {
+        "accent": accent,
+        "on_accent": color.ink_on(accent),
+        "accent_text": color.readable_on(accent, surfaces),
+        "accent_hover": color.mix_oklab(accent, p.accent_hover_mix, 1 - p.accent_hover_amount),
+    }
 
 
 class Theme(QObject):
@@ -59,7 +116,6 @@ class Theme(QObject):
     def __init__(
         self,
         accent: str = DEFAULT_ACCENT,
-        notch_bg: str = DEFAULT_NOTCH_BG,
         parent: QObject | None = None,
         *,
         window_theme: str = "dark",
@@ -67,9 +123,9 @@ class Theme(QObject):
     ) -> None:
         super().__init__(parent)
         self._accent = color.to_hex(color.parse_hex(accent))
-        self._notch_bg_id = notch_bg if notch_bg in NOTCH_BACKGROUNDS else DEFAULT_NOTCH_BG
         self._window_theme = window_theme if window_theme in WINDOW_THEMES else "dark"
         self._system_dark = system_dark
+        self._previewing = False
         self._derive()
 
     @classmethod
@@ -77,26 +133,15 @@ class Theme(QObject):
         cls, settings: Settings, parent: QObject | None = None, *, system_dark: bool = True
     ) -> Theme:
         return cls(
-            settings.accent,
-            settings.notch_bg,
-            parent,
-            window_theme=settings.window_theme,
-            system_dark=system_dark,
+            settings.accent, parent, window_theme=settings.window_theme, system_dark=system_dark
         )
 
     # --- entradas -----------------------------------------------------------
 
     @property
     def accent(self) -> str:
-        return self._accent
-
-    @property
-    def notch_bg_id(self) -> str:
-        return self._notch_bg_id
-
-    @property
-    def notch_bg(self) -> str:
-        return NOTCH_BACKGROUNDS[self._notch_bg_id][1]
+        """Accent em uso (durante a prévia do seletor, a cor sendo arrastada)."""
+        return self.notch.accent
 
     @property
     def window_theme(self) -> str:
@@ -105,16 +150,8 @@ class Theme(QObject):
 
     def set_accent(self, accent: str) -> None:
         accent = color.to_hex(color.parse_hex(accent))
-        if accent != self._accent:
+        if accent != self._accent or self._previewing:
             self._accent = accent
-            self._derive()
-            self.changed.emit()
-
-    def set_notch_bg(self, notch_bg_id: str) -> None:
-        if notch_bg_id not in NOTCH_BACKGROUNDS:
-            raise ValueError(f"fundo do notch desconhecido: {notch_bg_id!r}")
-        if notch_bg_id != self._notch_bg_id:
-            self._notch_bg_id = notch_bg_id
             self._derive()
             self.changed.emit()
 
@@ -134,52 +171,57 @@ class Theme(QObject):
                 self._derive()
                 self.changed.emit()
 
+    def preview_accent(self, accent: str) -> None:
+        """Enquanto o seletor de cor é arrastado: troca só accent, on-accent, accent-text
+        e hover, sem re-tingir a paleta e sem salvar (como o previewAccent do Voice)."""
+        accent = color.to_hex(color.parse_hex(accent))
+        self._previewing = True
+        self.notch = replace(self.notch, **_accent_colors("dark", accent, self.notch.surfaces))
+        self.window = replace(
+            self.window, **_accent_colors(self.window.name, accent, self.window.surfaces)
+        )
+        self._derive_notch_borders()
+        self.changed.emit()
+
+    def end_preview(self) -> None:
+        """Seletor fechado sem escolher: volta tudo para a cor salva."""
+        if self._previewing:
+            self._derive()
+            self.changed.emit()
+
     # --- derivadas ----------------------------------------------------------
 
+    @property
+    def window_scheme_name(self) -> str:
+        if self._window_theme == "system":
+            return "dark" if self._system_dark else "light"
+        return self._window_theme
+
     def _derive(self) -> None:
-        surfaces = (self.notch_bg, COLORS.surface, COLORS.panel, COLORS.sidebar)
-        self.on_accent = color.on_accent(self._accent)
-        self.accent_text = color.accent_text(self._accent, surfaces)
-        self.border_notch = color.with_alpha(self._accent, BORDER_ALPHA_NOTCH)
-        self.border_divider = color.with_alpha(self._accent, BORDER_ALPHA_DIVIDER)
-        self.border_button = color.with_alpha(self._accent, BORDER_ALPHA_BUTTON)
-        self.border_minimal = color.with_alpha(self._accent, BORDER_ALPHA_MINIMAL)
-        self.notch_scheme = self._scheme("dark", WINDOW_DARK, self.accent_text)
-        name = self._window_theme
-        if name == "system":
-            name = "dark" if self._system_dark else "light"
-        self.window = self.scheme_for(name)
+        self._previewing = False
+        self.notch = build_scheme("dark", self._accent)
+        name = self.window_scheme_name
+        self.window = self.notch if name == "dark" else build_scheme(name, self._accent)
+        self._derive_notch_borders()
 
-    def scheme_for(self, name: str) -> WindowScheme:
-        """Esquema da janela para `name` (dark | light) com o accent atual."""
-        palette = WINDOW_PALETTES[name]
-        surfaces = (palette.panel, palette.sidebar, palette.surface)
-        text = color.accent_text(self._accent, surfaces, palette.accent_toward)
-        return self._scheme(
-            name,
-            palette,
-            text,
-            color.with_alpha(text, palette.border_alpha_button),
-            color.with_alpha(text, palette.border_alpha_divider),
-        )
+    def _derive_notch_borders(self) -> None:
+        # Contorno do notch aberto e linha mínima continuam com o accent (marca do notch).
+        self.border_notch = color.with_alpha(self.notch.accent, BORDER_ALPHA_NOTCH)
+        self.border_minimal = color.with_alpha(self.notch.accent, BORDER_ALPHA_MINIMAL)
 
-    def _scheme(
-        self,
-        name: str,
-        palette: WindowPalette,
-        accent_text: str,
-        border_button: str | None = None,
-        border_divider: str | None = None,
-    ) -> WindowScheme:
-        return WindowScheme(
-            name=name,
-            palette=palette,
-            accent=self._accent,
-            on_accent=self.on_accent,
-            accent_text=accent_text,
-            border_button=border_button or self.border_button,
-            border_divider=border_divider or self.border_divider,
-        )
+    # Atalhos do notch (sempre escuro), para o código das páginas.
+    @property
+    def notch_bg(self) -> str:
+        return self.notch.rail
 
-    def q(self, value: str) -> QColor:
-        return qcolor(value)
+    @property
+    def on_accent(self) -> str:
+        return self.notch.on_accent
+
+    @property
+    def accent_text(self) -> str:
+        return self.notch.accent_text
+
+    @property
+    def accent_hover(self) -> str:
+        return self.notch.accent_hover

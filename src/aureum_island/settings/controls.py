@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from PySide6.QtCore import QPointF, QRectF, QSize, Qt, QTime, Signal
-from PySide6.QtGui import QFontMetrics, QGuiApplication, QPainter, QPen
+from PySide6.QtCore import QRectF, QSize, Qt, QTime, Signal
+from PySide6.QtGui import QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import (
     QAbstractButton,
     QAbstractSpinBox,
@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from aureum_island.island import icons
 from aureum_island.island.widgets import ActionButton, _css
 from aureum_island.services import hotkey as hotkey_service
 from aureum_island.theme.fonts import make_font
@@ -65,9 +66,9 @@ def subsection_title(text: str, parent: QWidget) -> QLabel:
 def field_style(theme: Theme, selector: str, *, error: bool = False) -> str:
     """QSpinBox / QTimeEdit / QLineEdit da janela: fundo surface, contorno accent 30%."""
     w = theme.window
-    border = w.danger_text if error else w.border_button
+    border = w.danger_text if error else w.border
     return (
-        f"{selector} {{ background: {w.surface}; color: {w.text};"
+        f"{selector} {{ background: {w.main}; color: {w.text};"
         f" border: 1px solid {_css(border)};"
         f" border-radius: {SETTINGS_WINDOW.input_radius}px;"
         f" padding: 0 {SETTINGS_WINDOW.gap}px;"
@@ -103,8 +104,8 @@ class Switch(QAbstractButton):
         rect = QRectF(self.rect())
         radius = rect.height() / 2
         on = self.isChecked()
-        painter.setPen(Qt.PenStyle.NoPen if on else QPen(qcolor(w.text_dim), 1))
-        painter.setBrush(qcolor(w.accent if on else w.track))
+        painter.setPen(Qt.PenStyle.NoPen if on else QPen(qcolor(w.subtle), 1))
+        painter.setBrush(qcolor(w.accent if on else w.border))
         painter.drawRoundedRect(rect.adjusted(0.5, 0.5, -0.5, -0.5), radius, radius)
         m = SETTINGS_WINDOW.switch_knob_margin
         knob = rect.height() - 2 * m
@@ -159,8 +160,8 @@ class Chip(QAbstractButton):
             painter.setBrush(qcolor(w.accent))
             fg = w.on_accent
         else:
-            painter.setPen(QPen(qcolor(w.border_button), 1))
-            painter.setBrush(qcolor(w.surface if self.underMouse() else w.panel))
+            painter.setPen(QPen(qcolor(w.border), 1))
+            painter.setBrush(qcolor(w.elevated if self.underMouse() else w.main))
             fg = w.text
         painter.drawRoundedRect(rect, radius, radius)
         painter.setPen(qcolor(fg))
@@ -183,27 +184,37 @@ class ChipGroup(QWidget):
         self,
         theme: Theme,
         name: str,
-        options: Sequence[tuple[object, str]],
+        options: Sequence[tuple],
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        self._theme = theme
         self.setAccessibleName(name)
-        self.values = [value for value, _ in options]
+        self.values = [value for value, *_ in options]
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
-        self.chips: list[Chip] = []
+        self.chips: list[QAbstractButton] = []
         row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(SETTINGS_WINDOW.chip_gap)
-        for i, (_value, label) in enumerate(options):
-            chip = Chip(label, theme, self)
+        m = self.margin
+        row.setContentsMargins(m, m, m, m)
+        row.setSpacing(self.spacing)
+        for i, (_value, label, *extra) in enumerate(options):
+            chip = self.make_chip(label, *extra)
             chip.setAccessibleName(f"{name}: {label}")
             self.group.addButton(chip, i)
             self.chips.append(chip)
-            row.addWidget(chip)
-        row.addStretch(1)
+            row.addWidget(chip, self.chip_stretch)
+        if not self.chip_stretch:
+            row.addStretch(1)
         self.group.idClicked.connect(self._on_clicked)
         self._sync_focus()
+
+    margin = 0
+    spacing = SETTINGS_WINDOW.chip_gap
+    chip_stretch = 0
+
+    def make_chip(self, label: str) -> QAbstractButton:
+        return Chip(label, self._theme, self)
 
     def value(self) -> object | None:
         index = self.group.checkedId()
@@ -428,12 +439,88 @@ class HotkeyField(ActionButton):
         self.setAccessibleName(f"Atalho global: {text}")
 
 
-class ColorSwatch(QAbstractButton):
-    """Bolinha de cor com anel quando selecionada ou com foco. Sem cor: contorno com "+"."""
+class Segment(QAbstractButton):
+    """Opção do controle segmentado: ícone + texto. Selecionada: fundo elevated."""
 
-    def __init__(
-        self, name: str, hex_color: str | None, theme: Theme, size: int, parent: QWidget
-    ) -> None:
+    def __init__(self, text: str, icon_name: str, theme: Theme, parent: QWidget) -> None:
+        super().__init__(parent)
+        self._theme = theme
+        self.icon_name = icon_name
+        self.setText(text)
+        self.setCheckable(True)
+        self.setFont(make_font(TYPOGRAPHY.family_body, SETTINGS_WINDOW.body_size, 500))
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedHeight(SETTINGS_WINDOW.segment_height)
+        self.toggled.connect(lambda _on: self.update())
+        theme.changed.connect(self.update)
+
+    def sizeHint(self) -> QSize:  # noqa: N802
+        text = QFontMetrics(self.font()).horizontalAdvance(self.text())
+        icon = SETTINGS_WINDOW.segment_icon + SETTINGS_WINDOW.segment_icon_gap
+        width = text + icon + 2 * SETTINGS_WINDOW.chip_padding_x
+        return QSize(width, SETTINGS_WINDOW.segment_height)
+
+    def keyPressEvent(self, event) -> None:  # noqa: N802
+        if event.key() in _ARROWS:
+            event.ignore()  # setas ficam com o grupo
+            return
+        super().keyPressEvent(event)
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        w = self._theme.window
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        rect = QRectF(self.rect())
+        radius = SETTINGS_WINDOW.segment_radius
+        on = self.isChecked()
+        if on:
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.setBrush(qcolor(w.elevated))
+            painter.drawRoundedRect(rect, radius, radius)
+        fg = w.text if on or self.underMouse() else w.text_muted
+        fm = QFontMetrics(self.font())
+        size, gap = SETTINGS_WINDOW.segment_icon, SETTINGS_WINDOW.segment_icon_gap
+        total = size + gap + fm.horizontalAdvance(self.text())
+        x = (self.width() - total) / 2
+        pm = icons.pixmap(self.icon_name, fg, size, self.devicePixelRatioF())
+        painter.drawPixmap(int(x), (self.height() - size) // 2, pm)
+        painter.setPen(qcolor(fg))
+        text_rect = QRectF(x + size + gap, 0, self.width(), self.height())
+        left = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        painter.drawText(text_rect, left, self.text())
+        if self.hasFocus():
+            ring = NOTCH.focus_ring_width
+            painter.setBrush(Qt.BrushStyle.NoBrush)
+            painter.setPen(QPen(qcolor(w.accent), ring))
+            inner = rect.adjusted(ring / 2, ring / 2, -ring / 2, -ring / 2)
+            painter.drawRoundedRect(inner, radius, radius)
+
+
+class Segmented(ChipGroup):
+    """Controle segmentado do Voice: moldura bg-main com borda; opções (valor, texto,
+    ícone) com o mesmo tamanho. Setas trocam a opção."""
+
+    margin = SETTINGS_WINDOW.segment_padding
+    spacing = SETTINGS_WINDOW.segment_padding
+    chip_stretch = 1
+
+    def make_chip(self, label: str, icon_name: str = "") -> QAbstractButton:
+        return Segment(label, icon_name, self._theme, self)
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        w = self._theme.window
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(qcolor(w.border), 1))
+        painter.setBrush(qcolor(w.main))
+        r = SETTINGS_WINDOW.control_radius
+        painter.drawRoundedRect(QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5), r, r)
+
+
+class ColorSwatch(QAbstractButton):
+    """Bolinha de cor (cor de uma agenda) com anel quando selecionada ou com foco."""
+
+    def __init__(self, name: str, hex_color: str, theme: Theme, size: int, parent: QWidget) -> None:
         super().__init__(parent)
         self.hex = hex_color
         self._theme = theme
@@ -446,88 +533,14 @@ class ColorSwatch(QAbstractButton):
         self.toggled.connect(lambda _on: self.update())
         theme.changed.connect(self.update)
 
-    def set_hex(self, hex_color: str | None) -> None:
-        self.hex = hex_color
-        self.update()
-
     def paintEvent(self, event) -> None:  # noqa: N802
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        w = self._theme.window
         s = self._size
-        circle = QRectF(3, 3, s, s)
-        if self.hex is None:
-            painter.setPen(QPen(qcolor(w.text_dim), 1))
-            painter.setBrush(qcolor(w.surface))
-            painter.drawEllipse(circle.adjusted(0.5, 0.5, -0.5, -0.5))
-            arm, c = s / 5, circle.center()
-            painter.setPen(QPen(qcolor(w.text), NOTCH.focus_ring_width))
-            painter.drawLine(QPointF(c.x() - arm, c.y()), QPointF(c.x() + arm, c.y()))
-            painter.drawLine(QPointF(c.x(), c.y() - arm), QPointF(c.x(), c.y() + arm))
-        else:
-            painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(qcolor(self.hex))
-            painter.drawEllipse(circle)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(qcolor(self.hex))
+        painter.drawEllipse(QRectF(3, 3, s, s))
         if self.isChecked() or self.hasFocus():
             painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.setPen(QPen(qcolor(w.text), NOTCH.focus_ring_width))
+            painter.setPen(QPen(qcolor(self._theme.window.text), NOTCH.focus_ring_width))
             painter.drawEllipse(QRectF(self.rect()).adjusted(1, 1, -1, -1))
-
-
-class EyeDropper(QWidget):
-    """Conta-gotas: cobre a tela com uma captura dela; o clique devolve a cor do pixel.
-
-    Esc ou clique direito cancelam. Uma janela por monitor.
-    """
-
-    picked = Signal(str)
-    cancelled = Signal()
-
-    def __init__(self, screen, siblings: list[EyeDropper]) -> None:
-        super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
-        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
-        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
-        self.setAccessibleName("Conta-gotas: clique para escolher a cor, Esc cancela")
-        self.setCursor(Qt.CursorShape.CrossCursor)
-        self._siblings = siblings
-        self._shot = screen.grabWindow(0)
-        self._image = self._shot.toImage()
-        self.setGeometry(screen.geometry())
-
-    @classmethod
-    def start(cls) -> list[EyeDropper]:
-        droppers: list[EyeDropper] = []
-        for screen in QGuiApplication.screens():
-            droppers.append(cls(screen, droppers))
-        for dropper in droppers:
-            dropper.show()
-            dropper.activateWindow()
-        return droppers
-
-    def paintEvent(self, event) -> None:  # noqa: N802
-        QPainter(self).drawPixmap(self.rect(), self._shot)
-
-    def mousePressEvent(self, event) -> None:  # noqa: N802
-        if event.button() != Qt.MouseButton.LeftButton:
-            self._close_all()
-            self.cancelled.emit()
-            return
-        ratio = self._image.width() / max(1, self.width())
-        pos = event.position()
-        x = min(self._image.width() - 1, int(pos.x() * ratio))
-        y = min(self._image.height() - 1, int(pos.y() * ratio))
-        hex_color = self._image.pixelColor(x, y).name().upper()
-        self._close_all()
-        self.picked.emit(hex_color)
-
-    def keyPressEvent(self, event) -> None:  # noqa: N802
-        if event.key() == Qt.Key.Key_Escape:
-            self._close_all()
-            self.cancelled.emit()
-            return
-        super().keyPressEvent(event)
-
-    def _close_all(self) -> None:
-        for dropper in list(self._siblings):
-            dropper.close()
-        self._siblings.clear()

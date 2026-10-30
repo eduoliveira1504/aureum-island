@@ -9,92 +9,74 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # --- Cores -------------------------------------------------------------------
+#
+# Paletas iguais às do Aureum Voice (apps/desktop/src/renderer/src/main.css), desenhadas em
+# volta do Dourado. Em runtime o Theme re-tinge os neutros (fundos, borda, texto) para o
+# matiz do accent; success e danger não mudam. Ver docs/decisions/0009.
 
 
 @dataclass(frozen=True)
-class Colors:
-    notch_bg: str = "#070605"
-    surface: str = "#14110D"
-    panel: str = "#0D0B09"
-    sidebar: str = "#090806"
-    text: str = "#F1E8D3"
-    text_muted: str = "#A89F88"
-    text_dim: str = "#8F866F"
-    track: str = "#2A2419"
-    danger_bg: str = "#5A2620"
-    danger_text: str = "#F6D5CE"
-    on_accent_dark: str = "#0A0908"
-    on_accent_light: str = "#FFFFFF"
-    shadow: str = "#000000"
-
-
-COLORS = Colors()
-
-
-@dataclass(frozen=True)
-class WindowPalette:
-    """Cores da janela de Configurações (o notch é sempre escuro e usa COLORS).
-
-    `accent_toward`: para onde o accent é misturado até virar texto legível
-    (branco no escuro, preto no claro).
-    """
-
-    panel: str
-    sidebar: str
-    surface: str
+class Palette:
+    bg_rail: str
+    bg_panel: str
+    bg_main: str
+    bg_elevated: str
+    border: str
     text: str
     text_muted: str
-    text_dim: str
-    track: str
-    danger_bg: str
-    danger_text: str
-    accent_toward: str
-    # Contornos (botões, chips, campos) e divisores: accent_text com esta opacidade.
-    border_alpha_button: float
-    border_alpha_divider: float
+    success: str
+    danger: str
+    # Hover do accent: color-mix(in oklab, accent, <cor> <quanto>)
+    accent_hover_mix: str
+    accent_hover_amount: float
 
 
-WINDOW_DARK = WindowPalette(
-    panel=COLORS.panel,
-    sidebar=COLORS.sidebar,
-    surface=COLORS.surface,
-    text=COLORS.text,
-    text_muted=COLORS.text_muted,
-    text_dim=COLORS.text_dim,
-    track=COLORS.track,
-    danger_bg=COLORS.danger_bg,
-    danger_text=COLORS.danger_text,
-    accent_toward=COLORS.on_accent_light,
-    border_alpha_button=0.30,
-    border_alpha_divider=0.14,
+DARK = Palette(
+    bg_rail="#0A0908",
+    bg_panel="#12110D",
+    bg_main="#17150F",
+    bg_elevated="#201D16",
+    border="#2A261D",
+    text="#F4EFE4",
+    text_muted="#A8A090",
+    success="#3FBF7F",
+    danger="#C7363B",
+    accent_hover_mix="#FFFFFF",
+    accent_hover_amount=0.12,
 )
-WINDOW_LIGHT = WindowPalette(
-    panel="#FAF7F0",
-    sidebar="#F1ECE1",
-    surface="#E8E0CF",
-    text="#1E1A14",
-    text_muted="#5C5446",
-    text_dim="#665D4E",
-    track="#D9D0BD",
-    danger_bg="#F6D5CE",
-    danger_text="#7A1F16",
-    accent_toward="#000000",
-    # No claro o accent a 30% some no fundo creme: contorno mais forte.
-    border_alpha_button=0.55,
-    border_alpha_divider=0.25,
+LIGHT = Palette(
+    bg_rail="#EFE9DC",
+    bg_panel="#F6F2E8",
+    bg_main="#FFFFFF",
+    bg_elevated="#F3EEE2",
+    border="#E4DCCB",
+    text="#1C1810",
+    text_muted="#6B6354",
+    success="#2E9E65",
+    danger="#C7363B",
+    accent_hover_mix="#000000",
+    accent_hover_amount=0.10,
 )
-WINDOW_PALETTES = {"dark": WINDOW_DARK, "light": WINDOW_LIGHT}
+PALETTES = {"dark": DARK, "light": LIGHT}
 
-# Opacidades das bordas derivadas do accent.
+# fg-subtle = color-mix(in oklab, text-muted 72%, bg-main)
+SUBTLE_MUTED_WEIGHT = 0.72
+
+# Tinta sobre o accent (on-accent): a que contrastar mais. Texto sobre danger: branco.
+INK_DARK = "#1A1406"
+INK_LIGHT = "#FFFFFF"
+ON_DANGER = "#FFFFFF"
+SHADOW = "#000000"
+
+# Opacidades do accent que continuam no notch: contorno do notch aberto e linha mínima.
 BORDER_ALPHA_NOTCH = 0.20
-BORDER_ALPHA_DIVIDER = 0.14
-BORDER_ALPHA_BUTTON = 0.30
 BORDER_ALPHA_MINIMAL = 0.55
 
-# Contraste mínimo exigido para texto (WCAG AA).
+# Contraste mínimo exigido para texto (WCAG AA). Só texto de controle desabilitado
+# pode ficar abaixo (a WCAG isenta).
 MIN_TEXT_CONTRAST = 4.5
 
-# Presets de destaque (mesmos do Aureum Voice). Chave = id salvo no settings.json.
+# Presets de destaque (mesmos do Aureum Voice).
 ACCENT_PRESETS: dict[str, tuple[str, str]] = {
     "dourado": ("Dourado", "#E8B531"),
     "ametista": ("Ametista", "#8B5CF6"),
@@ -103,22 +85,17 @@ ACCENT_PRESETS: dict[str, tuple[str, str]] = {
     "safira": ("Safira", "#4F8CC9"),
 }
 DEFAULT_ACCENT = ACCENT_PRESETS["dourado"][1]
-
-# Fundos do notch. Todos com contraste >= 4.5 para text, text-muted e text-dim.
-NOTCH_BACKGROUNDS: dict[str, tuple[str, str]] = {
-    "preto": ("Preto", "#070605"),
-    "marrom": ("Marrom escuro", "#1A120C"),
-    "grafite": ("Grafite", "#1C1915"),
-}
-DEFAULT_NOTCH_BG = "preto"
+# As paletas foram desenhadas em volta do Dourado: é a referência do re-tint.
+RETINT_REFERENCE = DEFAULT_ACCENT
 
 # --- Tipografia --------------------------------------------------------------
 
 
 @dataclass(frozen=True)
 class Typography:
-    family_title: str = "Cinzel"
-    family_body: str = "Inter"
+    family_title: str = "Sora"  # títulos e display
+    family_body: str = "Figtree"  # texto
+    family_mono: str = "Consolas"  # código hex (fonte do Windows, como o font-mono do Voice)
     title_letter_spacing_em: float = 0.18
     title_size_sm: int = 10
     title_size_md: int = 11
@@ -178,6 +155,7 @@ class Motion:
     # Fração da transição a partir da qual o conteúdo novo aparece (fade até o fim).
     content_fade_start: float = 0.6
     undo_ms: int = 5000  # "Desfazer" na linha da tarefa excluída
+    frame_ms: int = 16  # prévia da cor ao arrastar o seletor: no máximo 1 por frame
 
 
 MOTION = Motion()
@@ -340,11 +318,31 @@ class SettingsWindow:
     slider_handle: int = 14
     slider_hit: int = 24
     control_max_width: int = 520  # coluna dos controles (chips quebram antes disso)
-    preview_width: int = 360
-    preview_height: int = 120
-    preview_notch_width: int = 300
+    preview_width: int = 280
+    preview_height: int = 96
+    preview_notch_width: int = 248
     preview_notch_height: int = 64
-    preview_radius: int = 22
+    preview_radius: int = 18
+    # Aparência (igual ao Voice): duas colunas, prévia de 280 à direita
+    preview_column: int = 280
+    columns_gap: int = 24
+    control_radius: int = 12  # botões, campos, cartões (radius-control do Voice)
+    segment_height: int = 32
+    segment_radius: int = 8  # radius-item do Voice
+    segment_padding: int = 4
+    segment_icon: int = 16
+    segment_icon_gap: int = 8
+    swatch_column: int = 64  # bolinha + nome embaixo
+    swatch_label_gap: int = 6
+    swatch_check: int = 18
+    swatch_ring_offset: int = 2
+    swatch_ring_width: int = 2
+    swatch_dash: float = 3.0
+    label_size: int = 12  # rótulo em caixa alta acima dos controles
+    label_weight: int = 600
+    label_letter_spacing_em: float = 0.05
+    hex_width: int = 160
+    section_gap: int = 24
 
 
 SETTINGS_WINDOW = SettingsWindow()

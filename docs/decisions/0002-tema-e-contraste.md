@@ -1,6 +1,6 @@
 # 0002 — Tema e contraste
 
-Status: Aceita
+Status: Substituída por [0009](0009-personalizacao-igual-ao-voice.md)
 Date: 2026-10-29
 
 ## Context

@@ -17,7 +17,7 @@ from aureum_island.pages.focus_model import Phase, Status
 from aureum_island.services.focus import FocusService
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, PAGES, TYPOGRAPHY
+from aureum_island.theme.tokens import PAGES, TYPOGRAPHY
 
 _PHASE_LABEL = {
     Phase.FOCUS: "FOCO",
@@ -54,7 +54,7 @@ class FocusRing(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         stroke = PAGES.focus_ring_stroke
         rect = QRectF(self.rect()).adjusted(stroke / 2, stroke / 2, -stroke / 2, -stroke / 2)
-        pen = QPen(qcolor(COLORS.track), stroke)
+        pen = QPen(qcolor(self._theme.notch.border), stroke)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(pen)
         painter.drawEllipse(rect)
@@ -64,7 +64,7 @@ class FocusRing(QWidget):
             # Do topo, no sentido horário (ângulos do Qt em 1/16 de grau, anti-horário).
             painter.drawArc(rect, 90 * 16, -round(self.progress * 360 * 16))
         painter.setFont(self._font)
-        painter.setPen(qcolor(COLORS.text))
+        painter.setPen(qcolor(self._theme.notch.text))
         painter.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, self.text)
 
 
@@ -193,7 +193,10 @@ class FocusPage(QWidget):
         return "Pronto para começar"
 
     def _apply_theme(self) -> None:
-        for widget, fg in ((self.label, self._theme.accent_text), (self.status, COLORS.text_muted)):
+        for widget, fg in (
+            (self.label, self._theme.accent_text),
+            (self.status, self._theme.notch.text_muted),
+        ):
             palette = widget.palette()
             palette.setColor(QPalette.ColorRole.WindowText, qcolor(fg))
             widget.setPalette(palette)

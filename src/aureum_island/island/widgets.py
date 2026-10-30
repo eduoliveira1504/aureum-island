@@ -9,13 +9,13 @@ from PySide6.QtWidgets import QPushButton, QSlider, QToolButton, QWidget
 from aureum_island.island import icons
 from aureum_island.theme import color
 from aureum_island.theme.fonts import make_font
-from aureum_island.theme.theme import Theme, WindowScheme, qcolor
-from aureum_island.theme.tokens import BORDER_ALPHA_DIVIDER, COLORS, NOTCH, PAGES, TYPOGRAPHY
+from aureum_island.theme.theme import Scheme, Theme, qcolor
+from aureum_island.theme.tokens import NOTCH, PAGES, TYPOGRAPHY
 
 
-def scheme(theme: Theme, window: bool) -> WindowScheme:
+def scheme(theme: Theme, window: bool) -> Scheme:
     """Cores do notch (sempre escuro) ou da janela de Configurações (tema escolhido)."""
-    return theme.window if window else theme.notch_scheme
+    return theme.window if window else theme.notch
 
 
 class ActionButton(QPushButton):
@@ -66,16 +66,13 @@ class ActionButton(QPushButton):
         radius = rect.height() / 2
         hovered = self.underMouse() or self.isDown()
         if self.primary:
-            fill = (
-                color.mix(theme.accent, COLORS.on_accent_light, 0.12) if hovered else theme.accent
-            )
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(qcolor(fill))
+            painter.setBrush(qcolor(theme.accent_hover if hovered else theme.accent))
             text_color = theme.on_accent
         else:
-            painter.setPen(QPen(qcolor(theme.border_button), 1))
+            painter.setPen(QPen(qcolor(theme.border), 1))
             if hovered:
-                painter.setBrush(qcolor(color.with_alpha(theme.accent, BORDER_ALPHA_DIVIDER)))
+                painter.setBrush(qcolor(theme.elevated))
             else:
                 painter.setBrush(Qt.BrushStyle.NoBrush)
             text_color = theme.text
@@ -128,7 +125,8 @@ class Segments(QWidget):
         painter.setPen(Qt.PenStyle.NoPen)
         w, h, gap = self._w, self._h, self._gap
         for i in range(self.total):
-            painter.setBrush(qcolor(self._theme.accent if i < self.filled else COLORS.track))
+            n = self._theme.notch
+            painter.setBrush(qcolor(n.accent if i < self.filled else n.border))
             painter.drawRoundedRect(QRectF(i * (w + gap), 0, w, h), h / 2, h / 2)
 
 
@@ -169,34 +167,33 @@ class IconButton(QToolButton):
         self.setToolTip(label)
 
     def paintEvent(self, event) -> None:  # noqa: N802
-        theme = self._theme
+        theme = self._theme.notch
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         rect = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
         hovered = self.isEnabled() and (self.underMouse() or self.isDown())
         if self.primary:
-            fill = (
-                color.mix(theme.accent, COLORS.on_accent_light, 0.12) if hovered else theme.accent
-            )
+            fill = theme.accent_hover if hovered else theme.accent
             if not self.isEnabled():
-                fill = COLORS.track
+                fill = theme.border
             painter.setPen(Qt.PenStyle.NoPen)
             painter.setBrush(qcolor(fill))
             painter.drawEllipse(rect)
-            glyph_color = theme.on_accent if self.isEnabled() else COLORS.text_dim
+            glyph_color = theme.on_accent if self.isEnabled() else theme.subtle
         else:
             if hovered:
                 painter.setPen(Qt.PenStyle.NoPen)
-                painter.setBrush(qcolor(color.with_alpha(theme.accent, BORDER_ALPHA_DIVIDER)))
+                painter.setBrush(qcolor(theme.elevated))
                 painter.drawEllipse(rect)
-            glyph_color = COLORS.text if self.isEnabled() else COLORS.text_dim
+            # Desabilitado: fg-subtle (a WCAG isenta controles desabilitados).
+            glyph_color = theme.text if self.isEnabled() else theme.subtle
         size = self._icon_size
         pm = icons.pixmap(self.icon_name, glyph_color, size, self.devicePixelRatioF())
         painter.drawPixmap(int((self.width() - size) / 2), int((self.height() - size) / 2), pm)
         if self.hasFocus():
             ring = NOTCH.focus_ring_width
             painter.setBrush(Qt.BrushStyle.NoBrush)
-            painter.setPen(QPen(qcolor(COLORS.text if self.primary else theme.accent), ring))
+            painter.setPen(QPen(qcolor(theme.text if self.primary else theme.accent), ring))
             painter.drawEllipse(
                 QRectF(self.rect()).adjusted(ring / 2, ring / 2, -ring / 2, -ring / 2)
             )
@@ -264,9 +261,9 @@ class ThemedSlider(QSlider):
         y = (self.height() - h) / 2
         x0, width = handle / 2, self.width() - handle
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(qcolor(theme.track))
+        painter.setBrush(qcolor(theme.border))
         painter.drawRoundedRect(QRectF(x0, y, width, h), h / 2, h / 2)
-        fill = theme.accent if self.isEnabled() else theme.text_dim
+        fill = theme.accent if self.isEnabled() else theme.subtle
         painter.setBrush(qcolor(fill))
         if ratio > 0:
             painter.drawRoundedRect(QRectF(x0, y, width * ratio, h), h / 2, h / 2)
@@ -287,23 +284,25 @@ class ThemedSlider(QSlider):
 def line_edit_style(theme: Theme, *, error: bool = False, window: bool = False) -> str:
     """Campo de texto no notch ou na janela de Configurações (cores e medidas do tema)."""
     colors = scheme(theme, window)
-    border = colors.danger_text if error else colors.border_button
+    border = colors.danger_text if error else colors.border
+    background = colors.main if window else colors.panel
     return (
         "QLineEdit {"
-        f" background: {colors.surface}; color: {colors.text};"
+        f" background: {background}; color: {colors.text};"
         f" border: 1px solid {_css(border)}; border-radius: {PAGES.button_height // 2}px;"
         f" padding: 0 {PAGES.button_padding_x}px;"
-        f" selection-background-color: {theme.accent}; selection-color: {theme.on_accent};"
+        f" selection-background-color: {colors.accent}; selection-color: {colors.on_accent};"
         "}"
-        f"QLineEdit:focus {{ border: {NOTCH.focus_ring_width}px solid {theme.accent}; }}"
+        f"QLineEdit:focus {{ border: {NOTCH.focus_ring_width}px solid {colors.accent}; }}"
     )
 
 
-def scrollbar_style() -> str:
+def scrollbar_style(theme: Theme) -> str:
     w = PAGES.scrollbar_width
     return (
         f"QScrollBar:vertical {{ background: transparent; width: {w}px; margin: 0; }}"
-        f"QScrollBar::handle:vertical {{ background: {COLORS.track}; border-radius: {w // 2}px;"
+        f"QScrollBar::handle:vertical {{ background: {theme.notch.border};"
+        f" border-radius: {w // 2}px;"
         f" min-height: {PAGES.scrollbar_min_handle}px; }}"
         "QScrollBar::add-line, QScrollBar::sub-line { height: 0; }"
         "QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }"
@@ -312,14 +311,15 @@ def scrollbar_style() -> str:
 
 
 def menu_style(theme: Theme) -> str:
+    n = theme.notch
     return (
-        f"QMenu {{ background: {COLORS.panel}; color: {COLORS.text};"
-        f" border: 1px solid {_css(theme.border_divider)}; padding: {PAGES.menu_padding}px; }}"
+        f"QMenu {{ background: {n.main}; color: {n.text};"
+        f" border: 1px solid {n.border}; padding: {PAGES.menu_padding}px; }}"
         f"QMenu::item {{ padding: {PAGES.menu_item_padding_y}px {PAGES.menu_item_padding_x}px;"
         f" border-radius: {PAGES.menu_radius}px; }}"
-        f"QMenu::item:selected {{ background: {COLORS.surface}; color: {theme.accent_text}; }}"
-        f"QMenu::item:disabled {{ color: {COLORS.text_dim}; }}"
-        f"QMenu::separator {{ height: 1px; background: {_css(theme.border_divider)};"
+        f"QMenu::item:selected {{ background: {n.elevated}; color: {n.accent_text}; }}"
+        f"QMenu::item:disabled {{ color: {n.subtle}; }}"
+        f"QMenu::separator {{ height: 1px; background: {n.border};"
         f" margin: {PAGES.menu_padding}px {2 * PAGES.menu_padding}px; }}"
     )
 

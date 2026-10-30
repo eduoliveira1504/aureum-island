@@ -20,59 +20,7 @@ from aureum_island.services.hotkey import HotkeyStatus, parse_hotkey
 from aureum_island.services.single_instance import SingleInstance
 from aureum_island.services.storage import db, settings
 from aureum_island.settings.store import SettingsStore
-from aureum_island.theme.color import contrast, luminance
 from aureum_island.theme.theme import Theme
-from aureum_island.theme.tokens import ACCENT_PRESETS, MIN_TEXT_CONTRAST, NOTCH_BACKGROUNDS
-
-PRESETS = [hex_ for _, hex_ in ACCENT_PRESETS.values()]
-
-
-# --- contraste ----------------------------------------------------------------
-
-
-@pytest.mark.parametrize("window_theme", ["dark", "light"])
-@pytest.mark.parametrize("accent", PRESETS)
-def test_every_text_pair_reaches_minimum_contrast(qapp, window_theme, accent):
-    """Todos os pares texto/superfície e accent_text/superfície, nos dois temas e com
-    todos os presets, com pelo menos 4.5:1."""
-    w = Theme(accent, window_theme=window_theme).window
-    surfaces = (w.panel, w.sidebar, w.surface)
-    texts = (w.text, w.text_muted, w.text_dim, w.danger_text, w.accent_text)
-    for fg in texts:
-        for bg in surfaces:
-            assert contrast(fg, bg) >= MIN_TEXT_CONTRAST, (window_theme, accent, fg, bg)
-    assert contrast(w.danger_text, w.danger_bg) >= MIN_TEXT_CONTRAST
-    assert contrast(w.on_accent, w.accent) >= MIN_TEXT_CONTRAST
-
-
-@pytest.mark.parametrize("notch_bg", list(NOTCH_BACKGROUNDS))
-@pytest.mark.parametrize("accent", PRESETS)
-def test_notch_accent_text_reaches_minimum_contrast(qapp, notch_bg, accent):
-    theme = Theme(accent, notch_bg, window_theme="light")  # o claro não muda o notch
-    for bg in (theme.notch_bg, theme.notch_scheme.surface, theme.notch_scheme.panel):
-        assert contrast(theme.accent_text, bg) >= MIN_TEXT_CONTRAST
-
-
-def test_light_theme_darkens_accent_text(qapp):
-    dark = Theme("#E8B531", window_theme="dark").window
-    light = Theme("#E8B531", window_theme="light").window
-    assert dark.accent_text == "#E8B531"  # já passa no escuro
-    assert luminance(light.accent_text) < luminance("#E8B531")  # misturou para o preto
-    assert light.panel == "#FAF7F0"
-
-
-def test_system_theme_follows_windows(qtbot):
-    theme = Theme(window_theme="system", system_dark=True)
-    assert theme.window.name == "dark"
-    with qtbot.waitSignal(theme.changed):
-        theme.set_system_dark(False)
-    assert theme.window.name == "light"
-    theme.set_window_theme("dark")
-    with qtbot.assertNotEmitted(theme.changed):
-        theme.set_system_dark(True)
-        theme.set_system_dark(False)
-    assert theme.window.name == "dark"
-
 
 # --- store --------------------------------------------------------------------
 
@@ -353,17 +301,60 @@ def test_chip_group_arrow_keys(window, qtbot):
 
 def test_appearance_theme_and_accent(window):
     a, store, theme = window.sections["appearance"], window.deps.store, window.theme
-    a.window_theme.chips[1].click()
+    a.window_theme.chips[1].click()  # Claro
     assert store.value.window_theme == "light"
     assert theme.window.name == "light"
-    assert "#FAF7F0" in window.styleSheet()
-    a.accents.buttons()[1].click()  # Ametista
+    assert not a.system_hint.isVisibleTo(a)
+    a.window_theme.chips[2].click()
+    assert a.system_hint.isVisibleTo(a)
+    assert a.system_hint.text() == "Segue o modo claro/escuro do Windows."
+    assert [c.accessibleName() for c in a.window_theme.chips] == [
+        "Tema: Escuro",
+        "Tema: Claro",
+        "Tema: Sistema",
+    ]
+
+    a.presets[1].click()  # Ametista
     assert store.value.accent == "#8B5CF6"
-    a.hex.setText("12ab9c")
-    a._on_hex()
+    assert a.presets[1].selected and not a.other.selected
+    assert [s.text() for s in a.presets] == ["Dourado", "Ametista", "Esmeralda", "Brasa", "Safira"]
+
+
+def test_appearance_hex_field(window):
+    a, store = window.sections["appearance"], window.deps.store
+    a.hex.setText("#12ab9")
+    a._on_hex_edited("#12ab9")
+    assert store.value.accent == "#E8B531"  # incompleto: nada muda
+    a.hex.setText("#12ab9c")
+    a._on_hex_edited("#12ab9c")
+    assert a.hex.text() == "#12AB9C"  # maiúsculas
     assert store.value.accent == "#12AB9C"
-    assert a.other.isChecked()
+    assert a.other.selected  # cor que não é preset: "Outra" preenchida
     a.hex.setText("verde")
-    a._on_hex()
-    assert store.value.accent == "#12AB9C"
-    assert "#RRGGBB" in a.hex_error.text()
+    a._reset_hex()  # perdeu o foco: volta ao valor atual
+    assert a.hex.text() == "#12AB9C"
+    assert a.hex.maxLength() == 7
+
+
+def test_color_dialog_previews_then_saves_or_reverts(window, qtbot):
+    from PySide6.QtGui import QColor
+
+    a, store, theme = window.sections["appearance"], window.deps.store, window.theme
+    rail = theme.notch.rail
+    a.open_picker()
+    dialog = a.dialog
+    assert dialog.testOption(dialog.ColorDialogOption.DontUseNativeDialog)
+    for name in ("#112233", "#445566", "#8B5CF6"):  # arrastando: vários por frame
+        dialog.setCurrentColor(QColor(name))
+    assert theme.accent == "#E8B531"  # ainda não: junta num frame
+    qtbot.waitUntil(lambda: theme.accent == "#8B5CF6", timeout=500)
+    assert store.value.accent == "#E8B531"  # prévia não salva
+    assert theme.notch.rail == rail  # nem re-tinge
+    dialog.reject()
+    assert theme.accent == "#E8B531"  # cancelou: volta
+
+    a.open_picker()
+    a.dialog.setCurrentColor(QColor("#4F8CC9"))
+    a.dialog.accept()
+    assert store.value.accent == "#4F8CC9"
+    assert theme.notch.rail != rail  # salvou e re-tingiu

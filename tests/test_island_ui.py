@@ -20,7 +20,6 @@ from aureum_island.services.fullscreen import FullscreenWatcher, create_fullscre
 from aureum_island.services.hotkey import MOD_ALT, MOD_CONTROL, MOD_SHIFT, parse_hotkey
 from aureum_island.theme.color import contrast
 from aureum_island.theme.theme import Theme
-from aureum_island.theme.tokens import COLORS, NOTCH_BACKGROUNDS
 
 
 @pytest.fixture
@@ -103,9 +102,9 @@ def test_tab_order(bar):
 
 
 def test_colors_used_in_bar_meet_contrast(theme):
-    for _, bg in NOTCH_BACKGROUNDS.values():
-        for fg in (COLORS.text, COLORS.text_muted, theme.accent_text):
-            assert contrast(fg, bg) >= 4.5
+    n = theme.notch
+    for fg in (n.text, n.text_muted, theme.accent_text):
+        assert contrast(fg, theme.notch_bg) >= 4.5
 
 
 # --- relógio ----------------------------------------------------------------

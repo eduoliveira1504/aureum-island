@@ -1,4 +1,4 @@
-"""Registro das fontes empacotadas (Inter e Cinzel, OFL)."""
+"""Registro das fontes empacotadas (Sora e Figtree, variáveis, OFL), as mesmas do Aureum Voice."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from PySide6.QtGui import QFont, QFontDatabase
 
 log = logging.getLogger(__name__)
 
-FONT_FILES = ("Inter[opsz,wght].ttf", "Cinzel[wght].ttf")
+FONT_FILES = ("Figtree[wght].ttf", "Sora[wght].ttf")
 
 
 def register_fonts() -> list[str]:

@@ -42,7 +42,7 @@ from aureum_island.services.events import EventService
 from aureum_island.services.tasks import TaskService
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme, qcolor
-from aureum_island.theme.tokens import COLORS, NOTCH, PAGES, TYPOGRAPHY
+from aureum_island.theme.tokens import NOTCH, PAGES, TYPOGRAPHY
 
 
 def _local_now() -> datetime:
@@ -159,7 +159,7 @@ class MonthView(QWidget):
         painter.drawText(header, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft, title)
 
         painter.setFont(self._weekday_font)
-        painter.setPen(qcolor(COLORS.text_dim))
+        painter.setPen(qcolor(self._theme.notch.subtle_text))
         for col, label in enumerate(weekday_labels(self.week_start)):
             rect = QRectF(
                 col * PAGES.cal_cell_width,
@@ -184,7 +184,7 @@ class MonthView(QWidget):
                 painter.drawEllipse(circle)
                 fg, font = theme.on_accent, self._today_font
             else:
-                fg = COLORS.text if in_month else COLORS.text_dim
+                fg = self._theme.notch.text if in_month else self._theme.notch.subtle_text
                 font = self._day_font
             if day == self.selected and day != self.today:
                 painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -244,7 +244,7 @@ class AgendaRow(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         h = self.height()
         painter.setFont(self._time_font)
-        painter.setPen(qcolor(COLORS.text_muted))
+        painter.setPen(qcolor(self.page.theme.notch.text_muted))
         painter.drawText(
             QRectF(0, 0, PAGES.agenda_time_width, h), Qt.AlignmentFlag.AlignVCenter, self.time_text
         )
@@ -253,13 +253,19 @@ class AgendaRow(QWidget):
         width = max(0.0, tag.x() - PAGES.task_spacing - x)
         if self._editor is None:
             painter.setFont(self._title_font)
-            painter.setPen(qcolor(COLORS.text_dim if self.item.done else COLORS.text))
+            painter.setPen(
+                qcolor(
+                    self.page.theme.notch.subtle_text
+                    if self.item.done
+                    else self.page.theme.notch.text
+                )
+            )
             title = QFontMetricsF(self._title_font).elidedText(
                 self.item.title, Qt.TextElideMode.ElideRight, width
             )
             painter.drawText(QRectF(x, 0, width, h), Qt.AlignmentFlag.AlignVCenter, title)
         # Marca do tipo: contorno discreto; agendas ICS com o ponto da cor delas.
-        painter.setPen(QPen(qcolor(theme.border_button), 1))
+        painter.setPen(QPen(qcolor(theme.notch.border), 1))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawRoundedRect(
             tag.adjusted(0.5, 0.5, -0.5, -0.5), tag.height() / 2, tag.height() / 2
@@ -272,7 +278,7 @@ class AgendaRow(QWidget):
             painter.drawEllipse(QRectF(text_x, tag.center().y() - dot / 2, dot, dot))
             text_x += dot + 2
         painter.setFont(self._tag_font)
-        painter.setPen(qcolor(COLORS.text_muted))
+        painter.setPen(qcolor(self.page.theme.notch.text_muted))
         painter.drawText(
             QRectF(text_x, tag.y(), tag.right() - text_x, tag.height()),
             Qt.AlignmentFlag.AlignVCenter,
@@ -365,13 +371,13 @@ class CalendarPage(QWidget):
         self.month = MonthView(theme, self)
         self.month.day_selected.connect(lambda _day: self.refresh())
 
-        self.day_label = _Label(self)
+        self.day_label = _Label(theme, self)
         self._list = QWidget()
         self._list_layout = QVBoxLayout(self._list)
         self._list_layout.setContentsMargins(0, 0, PAGES.scrollbar_width + 2, 0)
         self._list_layout.setSpacing(0)
         self._list_layout.addStretch(1)
-        self.scroll = HoverScrollArea(self)
+        self.scroll = HoverScrollArea(theme, self)
         self.scroll.setWidget(self._list)
 
         self.title_input = QLineEdit(self)
@@ -510,8 +516,10 @@ class CalendarPage(QWidget):
 class _Label(QWidget):
     """Título da agenda do dia ("Hoje · qui, 29 out") e "Nada marcado" quando vazio."""
 
-    def __init__(self, parent: QWidget) -> None:
+    def __init__(self, theme: Theme, parent: QWidget) -> None:
         super().__init__(parent)
+        self._theme = theme
+        theme.changed.connect(self.update)
         self.text = ""
         self.empty = False
         self._font = make_font(
@@ -530,11 +538,11 @@ class _Label(QWidget):
     def paintEvent(self, event) -> None:  # noqa: N802
         painter = QPainter(self)
         painter.setFont(self._font)
-        painter.setPen(qcolor(COLORS.text_muted))
+        painter.setPen(qcolor(self._theme.notch.text_muted))
         align = Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft
         painter.drawText(self.rect(), align, self.text.upper())
         if self.empty:
             painter.setFont(self._empty_font)
-            painter.setPen(qcolor(COLORS.text_dim))
+            painter.setPen(qcolor(self._theme.notch.subtle_text))
             right = Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight
             painter.drawText(self.rect(), right, "Nada marcado")

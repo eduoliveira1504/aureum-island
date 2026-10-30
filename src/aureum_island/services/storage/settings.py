@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from aureum_island.theme.color import is_hex_color
-from aureum_island.theme.tokens import DEFAULT_ACCENT, DEFAULT_NOTCH_BG, NOTCH_BACKGROUNDS
+from aureum_island.theme.tokens import DEFAULT_ACCENT
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +64,6 @@ class Settings:
     # Aparência. O tema vale só para a janela de Configurações; o notch é sempre escuro.
     window_theme: str = "system"
     accent: str = DEFAULT_ACCENT
-    notch_bg: str = DEFAULT_NOTCH_BG
 
     def with_changes(self, **changes: Any) -> Settings:
         return replace(self, **changes)
@@ -115,7 +114,6 @@ _VALIDATORS: dict[str, Callable[[Any], bool]] = {
     "week_start": lambda v: v in ("sunday", "monday"),
     "window_theme": lambda v: v in WINDOW_THEMES,
     "accent": is_hex_color,
-    "notch_bg": lambda v: v in NOTCH_BACKGROUNDS,
 }
 
 

@@ -148,12 +148,12 @@ def test_invalid_and_unknown_values_fall_back(tmp_path):
         "hide_on_fullscreen": "sim",
         "hotkey": "   ",
         "accent": "dourado",
-        "notch_bg": "grafite",
+        "notch_bg": "grafite",  # chave removida (0009): ignorada
         "chave_nova": 42,
     }
     path.write_text(json.dumps(raw), encoding="utf-8")
     loaded = settings.load(path)
-    assert loaded == Settings(last_page="tasks", notch_bg="grafite")
+    assert loaded == Settings(last_page="tasks")
 
 
 def test_non_object_settings_fall_back(tmp_path):

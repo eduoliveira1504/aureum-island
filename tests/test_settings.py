@@ -435,3 +435,26 @@ def test_window_has_own_title_bar(window, qtbot):
     assert bar.maximize.accessibleName() == "Maximizar"
     bar.close_button.click()
     assert not window.isVisible()
+
+
+def test_general_shows_version_and_restart_when_update_ready(qtbot, tmp_path, settings_deps):
+    from aureum_island.services.updater import Updater
+    from aureum_island.settings.general_section import GeneralSection
+    from aureum_island.version import app_version
+
+    d = settings_deps
+    updater = Updater(tmp_path, current="0.1.0", enabled=False)
+    restarted = []
+    section = GeneralSection(
+        Theme(), d.store, d.hotkey, d.autostart, updater=updater,
+        restart_to_update=lambda: restarted.append(True),
+    )  # fmt: skip
+    qtbot.addWidget(section)
+    assert section.version_row.label.text() == f"Versão {app_version()}"
+    assert not section.update_button.isVisibleTo(section)
+    updater.ready_version = "0.2.0"
+    updater.ready.emit("0.2.0")
+    assert section.update_button.isVisibleTo(section)
+    assert "0.2.0" in section.version_row.hint.text()
+    section.update_button.click()
+    assert restarted == [True]

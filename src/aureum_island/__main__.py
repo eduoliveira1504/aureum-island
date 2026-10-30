@@ -62,6 +62,10 @@ def main(argv: list[str] | None = None) -> int:
         return app.exec()
     finally:
         instance.release()
+        # Atualização: só depois de soltar a instância única, senão o instalador
+        # silencioso (AppMutex) acharia o app aberto e desistiria.
+        if island.install_on_exit is not None:
+            island.updater.launch_installer(relaunch=island.install_on_exit)
 
 
 if __name__ == "__main__":

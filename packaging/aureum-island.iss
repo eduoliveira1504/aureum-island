@@ -60,8 +60,17 @@ Name: "{autoprograms}\{#AppName}"; Filename: "{app}\{#AppExe}"
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "Iniciar o {#AppName}"; Flags: nowait postinstall skipifsilent
+; Atualização automática: o app roda este setup em modo silencioso com /RELAUNCH=1
+; ("Reiniciar para atualizar") ou /RELAUNCH=0 (ao sair pelo "Sair"). Ver 0012.
+Filename: "{app}\{#AppExe}"; Flags: nowait; Check: ShouldRelaunch
 
 [Code]
+// Reabre o app no fim só quando o próprio app pediu a atualização silenciosa.
+function ShouldRelaunch: Boolean;
+begin
+  Result := WizardSilent and (ExpandConstant('{param:RELAUNCH|0}') = '1');
+end;
+
 // A desinstalação apaga só o programa. O resto só sai se o usuário confirmar cada parte;
 // em modo silencioso (/SUPPRESSMSGBOXES) a resposta é sempre Não. Quem apaga é o próprio
 // app (AureumIsland.exe --uninstall-cleanup), que sabe onde fica cada coisa.

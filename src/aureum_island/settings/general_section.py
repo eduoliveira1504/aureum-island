@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from aureum_island.island.widgets import ActionButton
 from aureum_island.services import hotkey as hotkey_service
 from aureum_island.services.autostart import Autostart
 from aureum_island.services.hotkey import GlobalHotkey, HotkeyStatus
+from aureum_island.services.updater import Updater
 from aureum_island.settings.controls import ChipGroup, HotkeyField, SettingRow, Switch
 from aureum_island.settings.store import SettingsStore
 from aureum_island.theme.fonts import make_font
 from aureum_island.theme.theme import Theme
 from aureum_island.theme.tokens import SETTINGS_WINDOW, TYPOGRAPHY
+from aureum_island.version import app_version
 
 
 def hotkey_status_text(hotkey: GlobalHotkey) -> str:
@@ -58,11 +62,15 @@ class GeneralSection(QWidget):
         hotkey: GlobalHotkey,
         autostart: Autostart,
         parent: QWidget | None = None,
+        *,
+        updater: Updater | None = None,
+        restart_to_update: Callable[[], None] | None = None,
     ) -> None:
         super().__init__(parent)
         from aureum_island.settings.window import hint, section_title
 
         self.setAccessibleName("Geral")
+        self.updater = updater
         self.store, self.hotkey, self.autostart = store, hotkey, autostart
 
         self.autostart_switch = Switch(theme, "Iniciar com o Windows", self)
@@ -138,7 +146,25 @@ class GeneralSection(QWidget):
         layout.addWidget(self.hotkey_status)
         layout.addWidget(self.hotkey_error)
         layout.addWidget(SettingRow("Início da semana", self.week, self))
+
+        # Versão e atualização (igual ao Voice: atualiza sozinho; aqui só reinicia).
+        self.update_button = ActionButton(
+            "Reiniciar para atualizar", theme, primary=True, window=True, parent=self
+        )
+        self.update_button.hide()
+        if restart_to_update is not None:
+            self.update_button.clicked.connect(restart_to_update)
+        self.version_row = SettingRow(
+            "Versão " + app_version(),
+            self.update_button,
+            self,
+            hint_text="As atualizações chegam sozinhas pelo GitHub.",
+        )
+        layout.addWidget(self.version_row)
         layout.addStretch(1)
+        if updater is not None:
+            updater.ready.connect(lambda _v: self._show_update())
+            self._show_update()
 
         store.changed.connect(lambda _keys: self.load())
         hotkey.status_changed.connect(self._show_hotkey)
@@ -151,6 +177,15 @@ class GeneralSection(QWidget):
         self.fullscreen_switch.setChecked(s.hide_on_fullscreen)
         self.week.set_value(s.week_start)
         self._show_hotkey()
+
+    def _show_update(self) -> None:
+        version = self.updater.ready_version if self.updater is not None else None
+        self.update_button.setVisible(version is not None)
+        if version is not None:
+            self.update_button.setAccessibleName(
+                f"Reiniciar para atualizar para a versão {version}"
+            )
+            self.version_row.hint.setText(f"A versão {version} está pronta para instalar.")
 
     def _show_hotkey(self) -> None:
         self.hotkey_field.set_hotkey(self.hotkey.text or "")

@@ -13,6 +13,16 @@ APP_NAME = "Aureum Island"
 DATA_DIR_ENV = "AUREUM_ISLAND_DATA_DIR"
 
 
+def updates_dir() -> Path:
+    """Instaladores baixados pela atualização automática. Em %LOCALAPPDATA% (cache, não
+    vai junto num perfil móvel do Windows)."""
+    override = os.environ.get(DATA_DIR_ENV)
+    if override:
+        return Path(override) / "updates"
+    location = QStandardPaths.StandardLocation.GenericCacheLocation
+    return Path(QStandardPaths.writableLocation(location)) / APP_NAME / "updates"
+
+
 def data_dir() -> Path:
     """%APPDATA%/Aureum Island (criada se não existir)."""
     override = os.environ.get(DATA_DIR_ENV)

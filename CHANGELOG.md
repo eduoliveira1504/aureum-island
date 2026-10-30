@@ -1,5 +1,19 @@
 # Novidades do Aureum Island
 
+## 0.2.0
+
+- **Atualização automática:** a partir desta versão, o app procura versões novas sozinho, baixa
+  em segundo plano e avisa no notch. É só clicar em **Reiniciar** (ou escolher "Reiniciar para
+  atualizar" na bandeja). Se você não reiniciar, a atualização entra quando você sair pelo
+  "Sair" da bandeja. Quem tem a 0.1.0 precisa instalar esta versão uma vez pela página.
+- **Animações mais fluidas:** o notch agora anda na taxa do seu monitor (até 240 Hz). Ele abre
+  com um leve efeito de mola e fecha de forma mais suave, e o conteúdo aparece junto.
+- **Tela cheia:** ao abrir um vídeo ou jogo em tela cheia, o notch se recolhe para cima em vez
+  de sumir de uma vez, e desce de volta quando você sai.
+- **Páginas:** trocar de página no notch aberto agora tem uma transição curta.
+- **Configurações › Geral:** mostra a versão instalada e o botão "Reiniciar para atualizar"
+  quando há uma versão nova pronta.
+
 ## 0.1.0
 
 Primeira versão. Um notch no topo da tela que abre com o mouse ou com **Ctrl+Alt+I**.

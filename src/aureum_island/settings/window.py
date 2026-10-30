@@ -6,6 +6,8 @@ sem botão Salvar. Cores do esquema da janela (theme.window: Escuro, Claro ou Si
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtWidgets import (
     QFrame,
@@ -24,6 +26,7 @@ from aureum_island.services.autostart import Autostart
 from aureum_island.services.calendar_sync import CalendarSync
 from aureum_island.services.hotkey import GlobalHotkey
 from aureum_island.services.sound import Sound
+from aureum_island.services.updater import Updater
 from aureum_island.settings.appearance_section import AppearanceSection
 from aureum_island.settings.calendar_section import CalendarSection
 from aureum_island.settings.focus_water_section import FocusWaterSection
@@ -75,6 +78,8 @@ class SettingsWindow(QWidget):
         hotkey: GlobalHotkey,
         autostart: Autostart,
         sound: Sound,
+        updater: Updater | None = None,
+        restart_to_update: Callable[[], None] | None = None,
         parent: QWidget | None = None,
     ) -> None:
         # Sem a barra do Windows: a barra é a do app (title_bar.py; win32 cuida do resto).
@@ -104,7 +109,14 @@ class SettingsWindow(QWidget):
 
         self.stack = QStackedWidget(self)
         self.sections: dict[str, QWidget] = {
-            "general": GeneralSection(theme, store, hotkey, autostart),
+            "general": GeneralSection(
+                theme,
+                store,
+                hotkey,
+                autostart,
+                updater=updater,
+                restart_to_update=restart_to_update,
+            ),
             "calendar": CalendarSection(theme, sync),
             "notices": NoticesSection(theme, store, sound),
             "focus_water": FocusWaterSection(theme, store),

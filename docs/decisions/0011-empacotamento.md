@@ -1,6 +1,6 @@
 # 0011 — Empacotamento: PyInstaller (pasta) + Inno Setup
 
-Status: Aceita
+Status: Aceita (a parte "Sem atualização automática" foi substituída pela [0012](0012-atualizacao-automatica.md))
 Date: 2026-10-30
 Substitui: da [0007](0007-configuracoes.md), o comando do início automático quando instalado e a trava em arquivo da instância única
 

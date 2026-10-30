@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import sys
 from datetime import datetime
 
 from PySide6.QtCore import QObject, Qt
@@ -37,11 +38,13 @@ from aureum_island.services.storage.settings import Settings
 from aureum_island.services.storage.tasks import TaskRepo
 from aureum_island.services.system_events import SystemEvents
 from aureum_island.services.tasks import TaskService
+from aureum_island.services.updater import Updater
 from aureum_island.services.volume import create_volume_service
 from aureum_island.services.water import WaterService
 from aureum_island.settings.store import SettingsStore
 from aureum_island.theme.theme import Theme
 from aureum_island.theme.tokens import NOTICE
+from aureum_island.version import app_version
 
 log = logging.getLogger(__name__)
 
@@ -138,6 +141,14 @@ class AureumIsland(QObject):
             page.popup_closed.connect(self.controller.popup_closed)
         self.settings_window = None  # criada na primeira abertura
         self.autostart = Autostart()
+        # Atualização automática (só no app instalado). Ver services/updater.py.
+        self.updater = Updater(
+            paths.updates_dir(),
+            current=app_version(),
+            enabled=bool(getattr(sys, "frozen", False)),
+            parent=self,
+        )
+        self.install_on_exit: bool | None = None  # None: não instalar; True/False: reabrir?
 
         # Som, tray e avisos
         self.sound = Sound(self)
@@ -199,6 +210,8 @@ class AureumIsland(QObject):
         self.focus.settle()  # fase que venceu há mais de 12 h (sem aviso)
         if self.settings.autostart:
             self.autostart.repair()  # pasta do app movida: corrige o caminho no registro
+        self.updater.ready.connect(self._on_update_ready)
+        self.updater.start()
 
     def open_settings(self, section: str | None = None) -> None:
         if self.settings_window is None:
@@ -211,6 +224,8 @@ class AureumIsland(QObject):
                 hotkey=self.hotkey,
                 autostart=self.autostart,
                 sound=self.sound,
+                updater=self.updater,
+                restart_to_update=self.restart_to_update,
             )
         self.settings_window.open(section)
 
@@ -378,10 +393,14 @@ class AureumIsland(QObject):
         open_action.triggered.connect(self.controller.open)
         settings_action = QAction("Configurações", menu)
         settings_action.triggered.connect(lambda: self.open_settings())
+        self._update_action = QAction("Reiniciar para atualizar", menu)
+        self._update_action.setVisible(False)
+        self._update_action.triggered.connect(self.restart_to_update)
         quit_action = QAction("Sair", menu)
-        quit_action.triggered.connect(self._app.quit)
+        quit_action.triggered.connect(self.quit_by_user)
         menu.addAction(open_action)
         menu.addAction(settings_action)
+        menu.addAction(self._update_action)
         menu.addSeparator()
         menu.addAction(quit_action)
         tray.setContextMenu(menu)
@@ -395,6 +414,36 @@ class AureumIsland(QObject):
     def _on_tray_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
             self.controller.open()
+
+    # --- atualização ----------------------------------------------------------
+
+    def _on_update_ready(self, version: str) -> None:
+        self._update_action.setText(f"Reiniciar para atualizar ({version})")
+        self._update_action.setVisible(True)
+        self.notices.push(
+            Notice(
+                title="Atualização pronta",
+                subtitle=f"Versão {version}",
+                icon="app",
+                kind="update",
+                actions=[NoticeAction("Reiniciar", self.restart_to_update, primary=True)],
+            )
+        )
+
+    def restart_to_update(self) -> None:
+        """Fecha o app; o __main__ roda o instalador depois de soltar a instância única e
+        o instalador reabre o app na versão nova."""
+        if self.updater.ready_version is None:
+            return
+        self.install_on_exit = True
+        self._app.quit()
+
+    def quit_by_user(self) -> None:
+        """ "Sair" da bandeja. Com uma atualização pronta, ela entra agora, sem reabrir.
+        (Desligar o Windows não passa por aqui: nada de instalar durante o logoff.)"""
+        if self.updater.ready_version is not None:
+            self.install_on_exit = False
+        self._app.quit()
 
     def _shutdown(self) -> None:
         self.media.stop()
